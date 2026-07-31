@@ -80,7 +80,7 @@ def generate_crew_briefing(fault: Dict, engine_graph=None) -> Dict:
         "is_imputed": is_imputed,
         "action_plan": action_plan,
         "safety_warning": safety_warning,
-        "generated_by": "Antigravity AI Dispatch Engine v1.0"
+        "generated_by": "AI Crew Dispatch Engine"
     }
 
     return briefing
