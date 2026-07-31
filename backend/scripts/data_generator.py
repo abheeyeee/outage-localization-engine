@@ -93,6 +93,7 @@ def generate_poles_for_dt(dt, start_pole_idx):
             "seq_on_line": seq_on_line if has_topology else "",
             "_seq_on_line": seq_on_line,
             "parent_pole_id": parent_pole_id if has_topology else "",
+            "_parent_pole_id": parent_pole_id,
             "pole_type": random.choice(["LT-8m-PCC", "LT-9m-PCC", "LT-8m-Steel"]),
             "ward": f"W-{random.randint(10, 99)}",
             "pincode": 560078 if random.random() > 0.03 else "", # 3% missing pincode
@@ -124,7 +125,18 @@ def main():
             dt_clean = {k: v for k, v in dt.items() if not k.startswith('_')}
             writer.writerow(dt_clean)
             
-    # Write Poles
+    # Write Ground Truth Poles (for Simulator only)
+    ground_truth_path = os.path.join(os.path.dirname(__file__), '../data/ground_truth_poles.csv')
+    with open(ground_truth_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=["pole_id", "lat", "lon", "feeder_id", "dt_id", "seq_on_line", "parent_pole_id", "pole_type", "ward", "pincode", "device_id"])
+        writer.writeheader()
+        for p in all_poles:
+            p_gt = {k: v for k, v in p.items() if not k.startswith('_')}
+            p_gt["seq_on_line"] = p.get("_seq_on_line", "")
+            p_gt["parent_pole_id"] = p.get("_parent_pole_id", "")
+            writer.writerow(p_gt)
+
+    # Write Poles (for Control Room)
     pole_path = os.path.join(os.path.dirname(__file__), '../data/poles.csv')
     with open(pole_path, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=["pole_id", "lat", "lon", "feeder_id", "dt_id", "seq_on_line", "parent_pole_id", "pole_type", "ward", "pincode", "device_id"])
