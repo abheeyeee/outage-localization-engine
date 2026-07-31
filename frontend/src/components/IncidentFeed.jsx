@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Sparkles, Network, ArrowRight } from 'lucide-react';
+import { AlertTriangle, Sparkles, Network, ArrowRight, Zap, Flame, AlertOctagon, Calendar } from 'lucide-react';
 
 export default function IncidentFeed({ faults, onSelectFault }) {
   return (
@@ -14,10 +14,10 @@ export default function IncidentFeed({ faults, onSelectFault }) {
       {/* Feed Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
         <h2 style={{ fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <AlertTriangle size={18} color="#ef4444" />
+          <AlertTriangle size={18} color="var(--text-muted)" />
           Active Incident Feed
         </h2>
-        <span className="glass-pill">{faults.length} Active</span>
+        <span className="glass-pill" style={{ background: '#cbd5e1', color: '#121212', fontWeight: 700, border: 'none', padding: '4px 14px' }}>{faults.length} Active</span>
       </div>
 
       {/* Incident List */}
@@ -29,13 +29,13 @@ export default function IncidentFeed({ faults, onSelectFault }) {
             alignItems: 'center',
             justifyContent: 'center',
             height: '100%',
-            color: '#64748b',
+            color: 'var(--text-dim)',
             textAlign: 'center',
             gap: '8px'
           }}>
-            <Sparkles size={32} color="#3b82f6" style={{ opacity: 0.5 }} />
-            <p style={{ fontSize: '0.85rem' }}>No active power grid faults detected.</p>
-            <p style={{ fontSize: '0.75rem', color: '#475569' }}>Grid operating nominally. Use simulation panel to inject a fault.</p>
+            <Sparkles size={32} color="var(--accent-primary)" style={{ opacity: 0.5 }} />
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>No active power grid faults detected.</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Grid operating nominally. Use simulation panel to inject a fault.</p>
           </div>
         ) : (
           faults.map((fault, idx) => {
@@ -47,9 +47,9 @@ export default function IncidentFeed({ faults, onSelectFault }) {
               <div 
                 key={idx}
                 style={{
-                  background: 'rgba(15, 23, 42, 0.6)',
-                  border: isImputed ? '1px solid rgba(249, 115, 22, 0.4)' : '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: '10px',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
                   padding: '14px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -59,12 +59,21 @@ export default function IncidentFeed({ faults, onSelectFault }) {
               >
                 {/* Title & Badge */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span className={fault.is_scheduled ? 'badge' : isSpan ? 'badge badge-red' : isDT ? 'badge badge-orange' : 'badge badge-red'} style={fault.is_scheduled ? { background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.4)' } : {}}>
+                  <span className="glass-pill" style={{ color: 'var(--text-main)', borderColor: 'var(--border-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {fault.is_scheduled ? (
+                      <Calendar size={14} color="#c084fc" />
+                    ) : isSpan ? (
+                      <Zap size={14} color="var(--accent-danger)" />
+                    ) : isDT ? (
+                      <Flame size={14} color="var(--accent-warning)" />
+                    ) : (
+                      <AlertOctagon size={14} color="var(--accent-warning)" />
+                    )}
                     {fault.is_scheduled ? 'SCHEDULED OUTAGE' : fault.fault_type.replace('_', ' ').toUpperCase()}
                   </span>
                   
                   {isImputed && (
-                    <span className="glass-pill" style={{ color: '#f97316', borderColor: 'rgba(249, 115, 22, 0.4)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="glass-pill" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Network size={12} />
                       MST IMPUTED
                     </span>
@@ -72,10 +81,10 @@ export default function IncidentFeed({ faults, onSelectFault }) {
                 </div>
 
                 {/* Details */}
-                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f1f5f9' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>
                   {fault.is_scheduled ? (
                     <div>
-                      <span style={{ color: '#c084fc' }}>{fault.reason || 'Scheduled Maintenance'}</span>
+                      <span style={{ color: 'var(--text-main)' }}>{fault.reason || 'Scheduled Maintenance'}</span>
                       <div style={{ fontSize: '0.8rem', color: '#cbd5e1', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
                         Target: {fault.dt_id || fault.feeder_id || fault.parent_id}
                       </div>
@@ -83,7 +92,7 @@ export default function IncidentFeed({ faults, onSelectFault }) {
                   ) : isSpan ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-mono)' }}>
                       <span>{fault.parent_id}</span>
-                      <ArrowRight size={14} color="#ef4444" />
+                      <ArrowRight size={14} color="var(--text-muted)" />
                       <span>{fault.child_id}</span>
                     </div>
                   ) : isDT ? (
@@ -94,8 +103,8 @@ export default function IncidentFeed({ faults, onSelectFault }) {
                 </div>
 
                 {/* PIN Code & Area Location */}
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ color: '#38bdf8', fontWeight: 600 }}>PIN: {fault.pincode || '560001'}</span>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>PIN: {fault.pincode || '560001'}</span>
                   <span>•</span>
                   <span>{fault.pincode_area || 'Bangalore Urban'}</span>
                 </div>
@@ -105,10 +114,10 @@ export default function IncidentFeed({ faults, onSelectFault }) {
                   onClick={() => onSelectFault(fault)}
                   style={{
                     marginTop: '4px',
-                    background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
-                    border: '1px solid var(--border-accent)',
-                    color: '#38bdf8',
-                    borderRadius: '6px',
+                    background: 'var(--accent-primary)',
+                    border: '1px solid transparent',
+                    color: '#ffffff',
+                    borderRadius: '10px',
                     padding: '8px 12px',
                     fontSize: '0.8rem',
                     fontWeight: 600,
@@ -117,10 +126,11 @@ export default function IncidentFeed({ faults, onSelectFault }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '6px',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                   }}
-                  onMouseEnter={(e) => e.target.style.background = 'rgba(56, 189, 248, 0.3)'}
-                  onMouseLeave={(e) => e.target.style.background = 'linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)'}
+                  onMouseEnter={(e) => e.target.style.background = 'var(--accent-hover)'}
+                  onMouseLeave={(e) => e.target.style.background = 'var(--accent-primary)'}
                 >
                   <Sparkles size={14} />
                   Generate AI Crew Briefing

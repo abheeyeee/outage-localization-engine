@@ -18,26 +18,26 @@ export default function Navbar({ stats, activeFaultCount, isConnected }) {
           width: '36px',
           height: '36px',
           borderRadius: '8px',
-          background: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)',
+          background: 'linear-gradient(135deg, #818cf8 0%, var(--accent-primary) 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 0 12px rgba(56, 189, 248, 0.4)'
+          boxShadow: '0 0 12px rgba(79, 70, 229, 0.4)'
         }}>
           <Zap size={20} color="#ffffff" />
         </div>
         <div>
-          <h1 style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '-0.02em', color: '#f1f5f9' }}>
+          <h1 style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
             Fault Locator Dashboard
           </h1>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{
               width: '6px',
               height: '6px',
               borderRadius: '50%',
-              backgroundColor: isConnected ? '#22c55e' : '#ef4444',
+              backgroundColor: isConnected ? 'var(--accent-success)' : 'var(--accent-danger)',
               display: 'inline-block',
-              boxShadow: isConnected ? '0 0 8px #22c55e' : 'none'
+              boxShadow: isConnected ? '0 0 8px var(--accent-success)' : 'none'
             }}></span>
             {isConnected ? 'Ingestion Live' : 'Connecting to API...'}
           </p>
@@ -47,23 +47,35 @@ export default function Navbar({ stats, activeFaultCount, isConnected }) {
       {/* Grid Live Statistics */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div className="glass-pill" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Cpu size={14} color="#38bdf8" />
-          <span>Poles: <strong style={{ color: '#ffffff' }}>{stats.total_poles || 2889}</strong></span>
+          <Cpu size={14} color="var(--accent-primary)" />
+          <span>Poles: <strong style={{ color: 'var(--text-main)' }}>{stats.total_poles || 2889}</strong></span>
         </div>
 
         <div className="glass-pill" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Activity size={14} color="#3b82f6" />
-          <span>Transformers: <strong style={{ color: '#ffffff' }}>{stats.total_dts || 40}</strong></span>
+          <Activity size={14} color="var(--accent-info)" />
+          <span>Transformers: <strong style={{ color: 'var(--text-main)' }}>{stats.total_dts || 40}</strong></span>
         </div>
 
         <div className="glass-pill" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Network size={14} color="#f97316" />
-          <span>Imputed DTs: <strong style={{ color: '#f97316' }}>{stats.imputed_dts_count || 24} (60%)</strong></span>
+          <Network size={14} color="var(--accent-warning)" />
+          <span>Imputed DTs: <strong style={{ color: 'var(--accent-warning)' }}>{stats.imputed_dts_count || 24} (60%)</strong></span>
         </div>
 
         {/* Active Fault Badge */}
-        <div className={`badge ${activeFaultCount > 0 ? 'badge-red' : 'badge-green'}`} style={{ fontSize: '0.8rem', padding: '6px 12px' }}>
-          <ShieldAlert size={14} />
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '6px 12px',
+          borderRadius: '8px',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          letterSpacing: '0.05em',
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid var(--border-color)',
+          color: 'var(--text-main)'
+        }}>
+          <ShieldAlert size={14} color={activeFaultCount > 0 ? 'var(--accent-danger)' : 'var(--accent-success)'} />
           <span>{activeFaultCount > 0 ? `${activeFaultCount} ACTIVE FAULT(S)` : 'GRID NOMINAL'}</span>
         </div>
       </div>

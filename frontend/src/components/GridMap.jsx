@@ -49,7 +49,7 @@ export default function GridMap({ nodes, edges, faults }) {
           const positions = [[source.lat, source.lon], [target.lat, target.lon]];
 
           // Color & Style logic
-          let color = edge.is_imputed ? '#f97316' : '#3b82f6';
+          let color = edge.is_imputed ? '#f59e0b' : '#4f46e5';
           let weight = edge.is_imputed ? 1.5 : 2;
           let dashArray = edge.is_imputed ? '4, 6' : null;
           let opacity = 0.65;
@@ -82,15 +82,15 @@ export default function GridMap({ nodes, edges, faults }) {
           const isDT = node.type === 'dt';
           
           // Color logic: Green = Live, Red = Dark, Yellow = Silent
-          let fillColor = '#22c55e';
+          let fillColor = '#10b981';
           if (!node.is_live) {
             fillColor = '#ef4444';
           } else if (node.reported_state === null && !isDT) {
-            fillColor = '#eab308'; // Silent / Comms Loss
+            fillColor = '#f59e0b'; // Silent / Comms Loss
           }
 
           const radius = isDT ? 7 : 4;
-          const strokeColor = isDT ? '#38bdf8' : '#0f172a';
+          const strokeColor = isDT ? '#818cf8' : '#0f172a';
 
           return (
             <CircleMarker
@@ -108,12 +108,12 @@ export default function GridMap({ nodes, edges, faults }) {
                 <div style={{ color: '#0f172a', fontSize: '0.85rem', fontFamily: 'sans-serif' }}>
                   <strong>{isDT ? `Transformer: ${node.id}` : `Pole: ${node.id}`}</strong>
                   <br />
-                  <span>Feeder: {node.feeder_id || 'N/A'}</span><br />
-                  <span>DT: {node.dt_id || 'N/A'}</span><br />
-                  <span>Status: <strong style={{ color: node.is_live ? '#16a34a' : '#dc2626' }}>
+                  <span>Feeder: <strong>{node.feeder_id || 'N/A'}</strong></span><br />
+                  <span>DT: <strong>{node.dt_id || 'N/A'}</strong></span><br />
+                  <span>Status: <strong style={{ color: node.is_live ? '#10b981' : '#ef4444' }}>
                     {node.is_live ? 'LIVE' : 'DARK / FAULTED'}
                   </strong></span><br />
-                  <span>Device ID: {node.device_id || 'No IoT Device'}</span>
+                  <span>IoT Device: <strong>{node.device_id ? node.device_id : 'Unmetered Pole (No Hardware Sensor)'}</strong></span>
                 </div>
               </Popup>
             </CircleMarker>
