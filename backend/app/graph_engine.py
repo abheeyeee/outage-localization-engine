@@ -158,9 +158,8 @@ class GraphEngine:
                 
         failed_feeders = set()
         for f_id, dts in feeders.items():
-            # If every DT on this feeder is completely dark (all children dark), it's a feeder fault
-            # We check the DT node itself (since its state is implied by its children via post-order traversal)
-            if all(not self.graph.nodes[dt].get('is_live', True) for dt in dts):
+            dark_dts = [dt for dt in dts if not self.graph.nodes[dt].get('is_live', True)]
+            if len(dts) > 0 and (len(dark_dts) / len(dts)) >= 0.5:
                 faults.append({
                     "fault_type": "feeder_fault",
                     "feeder_id": f_id,
@@ -187,7 +186,9 @@ class GraphEngine:
             # Skip checking spans if the pole/DT belongs to a transformer or feeder that already failed
             if u in failed_dts or u_data.get('dt_id') in failed_dts:
                 continue
-            if u_data.get('feeder_id') in failed_feeders:
+                
+            u_feeder = u_data.get('feeder_id') or self.graph.nodes.get(u_data.get('dt_id', ''), {}).get('feeder_id')
+            if u_feeder in failed_feeders:
                 continue
                 
             u_live = u_data.get('is_live', True)
