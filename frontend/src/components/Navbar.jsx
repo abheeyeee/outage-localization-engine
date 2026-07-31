@@ -28,7 +28,7 @@ export default function Navbar({ stats, activeFaultCount, isConnected }) {
         </div>
         <div>
           <h1 style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '-0.02em', color: '#f1f5f9' }}>
-            KSPDB Fault-Locator Engine
+            Fault Locator Dashboard
           </h1>
           <p style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{
@@ -39,7 +39,7 @@ export default function Navbar({ stats, activeFaultCount, isConnected }) {
               display: 'inline-block',
               boxShadow: isConnected ? '0 0 8px #22c55e' : 'none'
             }}></span>
-            {isConnected ? 'FastAPI Ingestion Live' : 'Connecting to API...'}
+            {isConnected ? 'Ingestion Live' : 'Connecting to API...'}
           </p>
         </div>
       </div>

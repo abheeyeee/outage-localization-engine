@@ -59,6 +59,8 @@ export default function App() {
     return () => clearInterval(interval);
   }, [fetchTopology, fetchFaults]);
 
+  const [simInfo, setSimInfo] = useState(null);
+
   // Simulate Fault Trigger
   const handleSimulate = async (type) => {
     setIsSimulating(true);
@@ -77,6 +79,8 @@ export default function App() {
 
       const res = await fetch(endpoint, options);
       if (res.ok) {
+        const data = await res.json();
+        setSimInfo(data);
         await fetchTopology();
         await fetchFaults();
       }
@@ -96,6 +100,7 @@ export default function App() {
         await fetchTopology();
         await fetchFaults();
         setSelectedBriefing(null);
+        setSimInfo(null);
       }
     } catch (err) {
       console.error('Reset error:', err);
@@ -144,6 +149,7 @@ export default function App() {
             onSimulate={handleSimulate} 
             onReset={handleReset} 
             isSimulating={isSimulating} 
+            simInfo={simInfo}
           />
         </div>
 

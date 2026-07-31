@@ -1,18 +1,42 @@
 import React, { useState } from 'react';
 import { Zap, RefreshCw, AlertOctagon, Flame, Calendar } from 'lucide-react';
 
-export default function SimulationPanel({ onSimulate, onReset, isSimulating }) {
+export default function SimulationPanel({ onSimulate, onReset, isSimulating, simInfo }) {
   return (
-    <div className="glass-panel" style={{
+    <div style={{
       position: 'absolute',
       bottom: '24px',
       left: '24px',
       zIndex: 1000,
-      padding: '14px 20px',
       display: 'flex',
-      alignItems: 'center',
-      gap: '12px'
+      flexDirection: 'column',
+      gap: '8px'
     }}>
+      {simInfo && (
+        <div className="glass-panel" style={{
+          padding: '8px 14px',
+          fontSize: '0.75rem',
+          color: '#38bdf8',
+          background: 'rgba(15, 23, 42, 0.85)',
+          border: '1px solid rgba(56, 189, 248, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          borderRadius: '8px'
+        }}>
+          <Zap size={14} color="#38bdf8" />
+          <span>
+            <strong>Telemetry Ingested:</strong> {simInfo.telemetry_sent} dying gasp messages received. (30% packet drop + Firmware 1.2 quiet failure applied)
+          </span>
+        </div>
+      )}
+
+      <div className="glass-panel" style={{
+        padding: '14px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
+      }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px', borderRight: '1px solid var(--border-color)', paddingRight: '16px' }}>
         <Zap size={18} color="#f97316" />
         <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f1f5f9' }}>Simulate Grid Event:</span>
@@ -128,6 +152,7 @@ export default function SimulationPanel({ onSimulate, onReset, isSimulating }) {
         <RefreshCw size={14} />
         Reset Grid State
       </button>
+      </div>
     </div>
   );
 }
