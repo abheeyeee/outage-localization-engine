@@ -47,8 +47,12 @@ class GraphEngine:
             for row in reader:
                 pole_id = row['pole_id']
                 self.poles[pole_id] = row
+                dt_info = self.dts.get(row['dt_id'], {})
+                feeder_id = dt_info.get('feeder_id')
+                device_id = row.get('device_id') or ''
                 self.graph.add_node(pole_id, type='pole', lat=float(row['lat']), lon=float(row['lon']), 
-                                    dt_id=row['dt_id'], is_live=True, seq=int(row.get('seq_on_line') or 0))
+                                    dt_id=row['dt_id'], feeder_id=feeder_id, device_id=device_id,
+                                    is_live=True, seq=int(row.get('seq_on_line') or 0))
 
         self._connect_poles()
         

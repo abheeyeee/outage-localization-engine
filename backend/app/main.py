@@ -189,9 +189,31 @@ def simulate_scheduled_outage():
         "faults": engine.localize_faults(MOCK_SCHEDULED_OUTAGES)
     }
 
+@app.post("/api/simulate/fast_forward")
+def fast_forward():
+    """ Simulates 15 minutes passing. Finds nodes that missed heartbeats. """
+    swept = 0
+    for pole_id in sim.physically_dead_nodes:
+        if pole_id in engine.graph.nodes:
+            # If the engine still thinks it's live, but it's physically dead,
+            # this simulates the 15-minute heartbeat missing
+            if engine.graph.nodes[pole_id].get('is_live', True):
+                engine.graph.nodes[pole_id]['is_live'] = False
+                engine.graph.nodes[pole_id]['reported_state'] = False
+                swept += 1
+                
+    faults = engine.localize_faults(MOCK_SCHEDULED_OUTAGES)
+    return {
+        "status": "success",
+        "swept_nodes": swept,
+        "message": f"Swept {swept} silent nodes via heartbeat timeout.",
+        "faults": faults
+    }
+
 @app.post("/api/grid/reset")
 def reset_grid():
     """ Reset all nodes in graph engine to healthy Live state """
+    sim.reset()
     for n in engine.graph.nodes:
         engine.graph.nodes[n]['is_live'] = True
         engine.graph.nodes[n]['reported_state'] = None

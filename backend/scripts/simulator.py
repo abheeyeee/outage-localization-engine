@@ -19,9 +19,13 @@ class Simulator:
         self.dts = {}
         self.poles = {}
         self.children_map = {} # parent_id -> list of child_ids
+        self.physically_dead_nodes = set()
         
         self.load_data()
         self.build_topology()
+        
+    def reset(self):
+        self.physically_dead_nodes.clear()
 
     def load_data(self):
         # Load DTs
@@ -111,6 +115,8 @@ class Simulator:
     def inject_span_fault(self, parent_id: str, child_id: str):
         print(f"--- INJECTING SPAN FAULT between {parent_id} and {child_id} ---")
         affected = self.get_all_downstream_poles(child_id)
+        for pole in affected:
+            self.physically_dead_nodes.add(pole['pole_id'])
         print(f"Physical Reality: {len(affected)} poles instantly lost power.")
         
         telemetry = self.generate_telemetry(affected, "power_lost")
@@ -126,6 +132,8 @@ class Simulator:
     def inject_dt_fault(self, dt_id: str):
         print(f"--- INJECTING DT FAULT on Transformer {dt_id} ---")
         affected = self.get_all_downstream_poles(dt_id)
+        for pole in affected:
+            self.physically_dead_nodes.add(pole['pole_id'])
         return self.generate_telemetry(affected, "power_lost")
 
     def inject_feeder_fault(self, feeder_id: str):
@@ -134,6 +142,8 @@ class Simulator:
         affected = []
         for dt_id in dt_ids:
             affected.extend(self.get_all_downstream_poles(dt_id))
+        for pole in affected:
+            self.physically_dead_nodes.add(pole['pole_id'])
         return self.generate_telemetry(affected, "power_lost")
 
     def post_telemetry(self, telemetry: List[Dict]):
