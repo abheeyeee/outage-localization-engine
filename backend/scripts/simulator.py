@@ -123,6 +123,19 @@ class Simulator:
             
         return telemetry
 
+    def inject_dt_fault(self, dt_id: str):
+        print(f"--- INJECTING DT FAULT on Transformer {dt_id} ---")
+        affected = self.get_all_downstream_poles(dt_id)
+        return self.generate_telemetry(affected, "power_lost")
+
+    def inject_feeder_fault(self, feeder_id: str):
+        print(f"--- INJECTING FEEDER FAULT on Feeder {feeder_id} ---")
+        dt_ids = [dt for dt, data in self.dts.items() if data.get('feeder_id') == feeder_id]
+        affected = []
+        for dt_id in dt_ids:
+            affected.extend(self.get_all_downstream_poles(dt_id))
+        return self.generate_telemetry(affected, "power_lost")
+
     def post_telemetry(self, telemetry: List[Dict]):
         print(f"\n--- POSTING TELEMETRY TO API ({API_URL}) ---")
         try:
