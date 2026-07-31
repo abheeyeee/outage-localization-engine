@@ -8,8 +8,12 @@ This document records the meaningful architectural and product decisions made wh
 **Date:** 2026-07-31
 **Context:** The assignment mandates that 60% of distribution transformers lack recorded wiring topology, while the simulator must physically calculate which poles lose power when a wire snaps.
 **What I Chose:** I implemented a dual-export strategy in `data_generator.py`:
-1. `poles.csv`: The incomplete utility registry given to `GraphEngine` (with `parent_pole_id` blank for 60% of DTs).
+1. `poles.csv`: The incomplete utility registry given to `GraphEngine` (with `parent_pole_id` blank `""` for 60% of DTs).
 2. `ground_truth_poles.csv`: The 100% complete physical topology map used strictly by `simulator.py`.
+**Implementation Details:**
+- **`has_topology` Flag:** Calculated as `[False] * 24 + [True] * 16` based on `MISSING_TOPOLOGY_PERCENTAGE = 0.60`.
+- **Dual Memory Keys:** During generation, each pole dictionary stores both `"parent_pole_id": parent_pole_id if has_topology else ""` and `"_parent_pole_id": parent_pole_id`.
+- **Export Overwrite:** `poles.csv` writes `parent_pole_id` as is (leaving 60% blank `""`), while `ground_truth_poles.csv` actively overwrites `parent_pole_id` with `_parent_pole_id` to restore the complete physical wiring map.
 **Why I Chose It:** This ensures strict zero-cheating data separation. The simulator models physical reality, while `GraphEngine` is forced to use Geometric MST Spatial Imputation to infer the missing 60% topology.
 
 ---
