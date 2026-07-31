@@ -2,6 +2,14 @@
 
 This document records the meaningful architectural and product decisions made while building this system, sorted newest first. 
 
+### Decision: Hierarchical Fault Aggregation & Child Ticket Suppression
+**Date:** 2026-07-31
+**Context:** When a Distribution Transformer blows or a Substation Feeder trips, all downstream poles (~70 to ~500 poles) lose power simultaneously. Generating 70 individual `span_fault` tickets would overwhelm field dispatch.
+**What I Chose:** 
+1. **Bottom-Up Aggregation:** In `resolve_implied_states()`, if all reporting children under a transformer or feeder report power loss, the parent DT/Feeder node is marked `is_live = False`.
+2. **Child Ticket Suppression:** In `localize_faults()`, if a parent DT or Feeder has failed (`u in failed_dts` or `u_data.get('dt_id') in failed_dts`), all individual child pole span checks are **skipped**.
+**Why I Chose It:** This guarantees that a blown transformer outputs **EXACTLY 1 `dt_fault` ticket** (pointing to the transformer station), preventing ticket storms and focusing lineman dispatch directly on the root-cause asset.
+
 ---
 
 ### Decision: Dual-CSV Ground Truth vs Incomplete Registry Strategy
