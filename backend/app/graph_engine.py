@@ -138,16 +138,22 @@ class GraphEngine:
                 if any(not self.graph.nodes[p].get('is_live', True) for p in parents):
                     self.graph.nodes[node]['is_live'] = False
 
-    def localize_faults(self) -> List[Dict]:
+    def localize_faults(self, scheduled_outages: List[Dict] = None) -> List[Dict]:
         """
         Find all edges where Parent is Live and Child is Dark.
+        Cross-references active scheduled outages feed.
         """
         self.resolve_implied_states()
         
+        # Build map of active scheduled outages
+        scheduled_map = {}
+        if scheduled_outages:
+            for outage in scheduled_outages:
+                scheduled_map[outage.get('target_id')] = outage.get('reason', 'Scheduled Maintenance')
+
         faults = []
         
         # 1. Check for Feeder Faults
-        # Group DTs by feeder
         feeders = {}
         for node, data in self.graph.nodes(data=True):
             if data['type'] == 'dt':
@@ -160,10 +166,13 @@ class GraphEngine:
         for f_id, dts in feeders.items():
             dark_dts = [dt for dt in dts if not self.graph.nodes[dt].get('is_live', True)]
             if len(dts) > 0 and (len(dark_dts) / len(dts)) >= 0.5:
+                is_sched = f_id in scheduled_map
                 faults.append({
                     "fault_type": "feeder_fault",
                     "feeder_id": f_id,
-                    "affected_dts": len(dts)
+                    "affected_dts": len(dts),
+                    "is_scheduled": is_sched,
+                    "reason": scheduled_map.get(f_id) if is_sched else None
                 })
                 failed_feeders.add(f_id)
                 
@@ -172,10 +181,13 @@ class GraphEngine:
         for node, data in self.graph.nodes(data=True):
             if data['type'] == 'dt' and data['feeder_id'] not in failed_feeders:
                 if not data.get('is_live', True):
+                    is_sched = node in scheduled_map
                     faults.append({
                         "fault_type": "dt_fault",
                         "dt_id": node,
-                        "is_imputed": node in self.imputed_dts
+                        "is_imputed": node in self.imputed_dts,
+                        "is_scheduled": is_sched,
+                        "reason": scheduled_map.get(node) if is_sched else None
                     })
                     failed_dts.add(node)
                     
@@ -195,11 +207,14 @@ class GraphEngine:
             v_live = self.graph.nodes[v].get('is_live', True)
             
             if u_live and not v_live:
+                is_sched = u in scheduled_map or v in scheduled_map
                 faults.append({
                     "fault_type": "span_fault",
                     "parent_id": u,
                     "child_id": v,
-                    "is_imputed": data.get('is_imputed', False)
+                    "is_imputed": data.get('is_imputed', False),
+                    "is_scheduled": is_sched,
+                    "reason": scheduled_map.get(u) or scheduled_map.get(v) if is_sched else None
                 })
                 
         return faults

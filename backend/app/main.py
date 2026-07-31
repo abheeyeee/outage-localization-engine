@@ -86,10 +86,35 @@ def get_grid_topology():
         }
     }
 
+MOCK_SCHEDULED_OUTAGES = [
+    {
+        "id": "SO-2026-07-29-014",
+        "scope": "feeder",
+        "target_id": "F-07-03",
+        "start": "2026-07-29T10:00:00Z",
+        "end": "2026-08-01T23:59:59Z",
+        "reason": "Planned maintenance - jumper replacement"
+    },
+    {
+        "id": "SO-2026-07-29-021",
+        "scope": "dt",
+        "target_id": "D-0005",
+        "start": "2026-07-29T14:00:00Z",
+        "end": "2026-08-01T23:59:59Z",
+        "reason": "Load shedding"
+    }
+]
+
+@app.get("/scheduled-outages")
+@app.get("/api/scheduled-outages")
+def get_scheduled_outages(from_ts: str = None, to_ts: str = None):
+    """ Returns active scheduled maintenance and load shedding outages """
+    return MOCK_SCHEDULED_OUTAGES
+
 @app.get("/api/faults")
 def get_localized_faults():
     """ Returns active localized fault tickets """
-    return engine.localize_faults()
+    return engine.localize_faults(MOCK_SCHEDULED_OUTAGES)
 
 @app.post("/telemetry", response_model=FaultResponse)
 def ingest_telemetry(events: List[TelemetryEvent]):
@@ -107,7 +132,7 @@ def ingest_telemetry(events: List[TelemetryEvent]):
             engine.graph.nodes[pole_id]['last_seq'] = event.seq
             processed += 1
             
-    faults = engine.localize_faults()
+    faults = engine.localize_faults(MOCK_SCHEDULED_OUTAGES)
     return FaultResponse(
         status="success",
         message=f"Processed {processed} telemetry events.",
@@ -147,7 +172,7 @@ def simulate_fault(req: SimulateFaultRequest):
         "status": "success",
         "telemetry_sent": len(telemetry_raw),
         "telemetry_processed": res.message,
-        "faults": engine.localize_faults()
+        "faults": engine.localize_faults(MOCK_SCHEDULED_OUTAGES)
     }
 
 @app.post("/api/grid/reset")

@@ -59,8 +59,8 @@ export default function IncidentFeed({ faults, onSelectFault }) {
               >
                 {/* Title & Badge */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span className={isSpan ? 'badge badge-red' : isDT ? 'badge badge-orange' : 'badge badge-red'}>
-                    {fault.fault_type.replace('_', ' ').toUpperCase()}
+                  <span className={fault.is_scheduled ? 'badge' : isSpan ? 'badge badge-red' : isDT ? 'badge badge-orange' : 'badge badge-red'} style={fault.is_scheduled ? { background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.4)' } : {}}>
+                    {fault.is_scheduled ? 'SCHEDULED OUTAGE' : fault.fault_type.replace('_', ' ').toUpperCase()}
                   </span>
                   
                   {isImputed && (
