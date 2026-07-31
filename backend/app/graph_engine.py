@@ -109,16 +109,25 @@ class GraphEngine:
         1. Bottom-Up Pass (Leaves to Root): Overrides Lying Sensors if any downstream child is Live.
         2. Top-Down Pass (Root to Leaves): Propagates physical blackout to silent downstream children.
         """
-        # Pass 1: Bottom-Up (Lying Sensor Override)
+        # Pass 1: Bottom-Up (Lying Sensor Override & DT/Feeder Outage Collapse)
         for node in reversed(list(nx.topological_sort(self.graph))):
             children = list(self.graph.successors(node))
             if children:
-                any_child_live = any(
-                    self.graph.nodes[c].get('is_live', True) and self.graph.nodes[c].get('reported_state') is not False 
+                # Check if any child is actively live (reported_state is True, or confirmed is_live)
+                any_child_confirmed_live = any(
+                    self.graph.nodes[c].get('is_live', True) and self.graph.nodes[c].get('reported_state') is True 
                     for c in children
                 )
-                # Lying Sensor Override: If parent reported Dark but any child is Live -> Parent is Live
-                if any_child_live and self.graph.nodes[node].get('reported_state') is False:
+                
+                # Check if all reporting children reported power loss
+                reporting_children = [c for c in children if self.graph.nodes[c].get('reported_state') is not None]
+                all_reporting_dark = len(reporting_children) > 0 and all(
+                    self.graph.nodes[c].get('reported_state') is False for c in reporting_children
+                )
+                
+                if all_reporting_dark and not any_child_confirmed_live:
+                    self.graph.nodes[node]['is_live'] = False
+                elif any_child_confirmed_live and self.graph.nodes[node].get('reported_state') is False:
                     self.graph.nodes[node]['is_live'] = True
 
         # Pass 2: Top-Down (Physical Blackout Propagation)
@@ -175,8 +184,8 @@ class GraphEngine:
         for u, v, data in self.graph.edges(data=True):
             u_data = self.graph.nodes[u]
             
-            # Skip checking spans if the parent is already part of a massive Feeder/DT blackout
-            if u_data['type'] == 'dt' and u in failed_dts:
+            # Skip checking spans if the pole/DT belongs to a transformer or feeder that already failed
+            if u in failed_dts or u_data.get('dt_id') in failed_dts:
                 continue
             if u_data.get('feeder_id') in failed_feeders:
                 continue
