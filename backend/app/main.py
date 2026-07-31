@@ -161,7 +161,11 @@ def simulate_fault(req: SimulateFaultRequest):
         telemetry_raw = sim.inject_dt_fault(dt_id)
         
     else:  # feeder
-        feeder_id = req.feeder_id or "F-07-01"
+        if req.feeder_id:
+            feeder_id = req.feeder_id
+        else:
+            feeders = list(set(dt.get('feeder_id') for dt in engine.dts.values() if dt.get('feeder_id')))
+            feeder_id = random.choice(feeders) if feeders else "F-07-01"
         telemetry_raw = sim.inject_feeder_fault(feeder_id)
 
     # Ingest generated noisy telemetry
