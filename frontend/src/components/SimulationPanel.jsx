@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Zap, RefreshCw, AlertOctagon, Flame, Calendar, FastForward } from 'lucide-react';
+import { Zap, RefreshCw, AlertOctagon, Flame, Calendar, FastForward, Wrench } from 'lucide-react';
 
-export default function SimulationPanel({ onSimulate, onReset, onFastForward, isSimulating, simInfo }) {
+export default function SimulationPanel({ onSimulate, onReset, onFastForward, onRestorePower, isSimulating, simInfo }) {
   return (
     <div style={{
       position: 'absolute',
@@ -175,6 +175,32 @@ export default function SimulationPanel({ onSimulate, onReset, onFastForward, is
       >
         <FastForward size={14} color="#38bdf8" />
         Fast-Forward 15 Mins
+      </button>
+
+      {/* Repair Fault Button */}
+      <button
+        disabled={isSimulating}
+        onClick={onRestorePower}
+        style={{
+          background: 'transparent',
+          border: '1px solid var(--border-color)',
+          color: 'var(--text-muted)',
+          borderRadius: '12px',
+          padding: '8px 14px',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          cursor: isSimulating ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          marginLeft: '12px',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseEnter={(e) => { e.target.style.color = 'var(--text-main)'; e.target.style.background = 'var(--bg-secondary)'; }}
+        onMouseLeave={(e) => { e.target.style.color = 'var(--text-muted)'; e.target.style.background = 'transparent'; }}
+      >
+        <Wrench size={14} color="#a855f7" />
+        Repair Fault (Restore Power)
       </button>
 
       {/* Reset Grid Button */}

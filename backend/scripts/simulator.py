@@ -94,7 +94,11 @@ class Simulator:
             event_time = base_time + timedelta(seconds=skew)
             
             # Sequence number (mocked for simulation)
-            seq = random.randint(1000, 90000)
+            # Restoration events must have higher seq than fault events to pass the dedup filter
+            if event_type in ("boot", "power_restored"):
+                seq = random.randint(90001, 99999)
+            else:
+                seq = random.randint(1000, 90000)
             
             messages.append({
                 "device_id": device_id,
@@ -145,6 +149,24 @@ class Simulator:
         for pole in affected:
             self.physically_dead_nodes.add(pole['pole_id'])
         return self.generate_telemetry(affected, "power_lost")
+
+    def restore_grid(self):
+        print(f"--- RESTORING GRID POWER ---")
+        affected = []
+        for pole_id in list(self.physically_dead_nodes):
+            if pole_id in self.poles:
+                affected.append(self.poles[pole_id])
+                
+        # Generate boot messages
+        boot_telemetry = self.generate_telemetry(affected, "boot")
+        
+        # Generate power_restored messages
+        restored_telemetry = self.generate_telemetry(affected, "power_restored")
+        
+        self.physically_dead_nodes.clear()
+        
+        # Interleave or just return all together
+        return boot_telemetry + restored_telemetry
 
     def post_telemetry(self, telemetry: List[Dict]):
         print(f"\n--- POSTING TELEMETRY TO API ({API_URL}) ---")

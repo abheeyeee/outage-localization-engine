@@ -1,7 +1,7 @@
 import React from 'react';
-import { AlertTriangle, Sparkles, Network, ArrowRight, Zap, Flame, AlertOctagon, Calendar } from 'lucide-react';
+import { AlertTriangle, Sparkles, Network, ArrowRight, Zap, Flame, AlertOctagon, Calendar, CheckCircle } from 'lucide-react';
 
-export default function IncidentFeed({ faults, onSelectFault }) {
+export default function IncidentFeed({ faults, onSelectFault, onResolveTicket }) {
   return (
     <aside className="glass-panel" style={{
       width: '380px',
@@ -109,32 +109,61 @@ export default function IncidentFeed({ faults, onSelectFault }) {
                   <span>{fault.pincode_area || 'Bangalore Urban'}</span>
                 </div>
 
-                {/* AI Briefing Button */}
-                <button
-                  onClick={() => onSelectFault(fault)}
-                  style={{
-                    marginTop: '4px',
-                    background: 'var(--accent-primary)',
-                    border: '1px solid transparent',
-                    color: '#ffffff',
-                    borderRadius: '10px',
-                    padding: '8px 12px',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = 'var(--accent-hover)'}
-                  onMouseLeave={(e) => e.target.style.background = 'var(--accent-primary)'}
-                >
-                  <Sparkles size={14} />
-                  Generate AI Crew Briefing
-                </button>
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <button
+                    onClick={() => onSelectFault(fault)}
+                    style={{
+                      flex: 1,
+                      background: 'var(--accent-primary)',
+                      border: '1px solid transparent',
+                      color: '#ffffff',
+                      borderRadius: '10px',
+                      padding: '8px 12px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = 'var(--accent-hover)'}
+                    onMouseLeave={(e) => e.target.style.background = 'var(--accent-primary)'}
+                  >
+                    <Sparkles size={14} />
+                    Briefing
+                  </button>
+
+                  {!fault.is_scheduled && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onResolveTicket({ ...fault, target: fault.dt_id || fault.child_id || fault.feeder_id }); }}
+                      style={{
+                        flex: 1,
+                        background: 'rgba(34, 197, 94, 0.1)',
+                        border: '1px solid rgba(34, 197, 94, 0.2)',
+                        color: '#22c55e',
+                        borderRadius: '10px',
+                        padding: '8px 12px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => { e.target.style.background = 'rgba(34, 197, 94, 0.2)'; }}
+                      onMouseLeave={(e) => { e.target.style.background = 'rgba(34, 197, 94, 0.1)'; }}
+                    >
+                      <CheckCircle size={14} />
+                      Resolve
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })

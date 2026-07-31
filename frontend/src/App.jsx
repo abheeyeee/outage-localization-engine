@@ -127,6 +127,44 @@ export default function App() {
     }
   };
 
+  // Restore Power (Repair Faults)
+  const handleRestorePower = async () => {
+    setIsSimulating(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/simulate/restore`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setSimInfo({ ...data, message: "Lineman repaired fault. Power restored!" });
+        await fetchTopology();
+        await fetchFaults();
+      }
+    } catch (err) {
+      console.error('Restore power error:', err);
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
+  // Resolve Ticket manually
+  const handleResolveTicket = async (fault) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/faults/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_id: fault.target })
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        alert(`System Rejected: ${errData.detail}`);
+      } else {
+        alert("Ticket resolved successfully!");
+        fetchFaults();
+      }
+    } catch (err) {
+      console.error('Resolve ticket error:', err);
+    }
+  };
+
   // Generate AI Crew Briefing
   const handleSelectFault = async (fault) => {
     try {
@@ -167,13 +205,18 @@ export default function App() {
             onSimulate={handleSimulate} 
             onReset={handleReset} 
             onFastForward={handleFastForward}
+            onRestorePower={handleRestorePower}
             isSimulating={isSimulating} 
             simInfo={simInfo}
           />
         </div>
 
         {/* Right Side: Incident Feed Sidebar */}
-        <IncidentFeed faults={faults} onSelectFault={handleSelectFault} />
+        <IncidentFeed 
+            faults={faults} 
+            onSelectFault={handleSelectFault} 
+            onResolveTicket={handleResolveTicket} 
+        />
       </main>
 
       {/* AI Briefing Modal Popup */}

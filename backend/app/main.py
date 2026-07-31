@@ -1,4 +1,4 @@
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional
@@ -214,6 +214,45 @@ def fast_forward():
         "faults": faults
     }
 
+@app.post("/api/simulate/restore")
+def restore_power():
+    """ Simulates a crew physically repairing the fault and power returning """
+    telemetry_raw = sim.restore_grid()
+    events = [TelemetryEvent(**msg) for msg in telemetry_raw]
+    res = ingest_telemetry(events)
+    
+    # A physical crew repair restores ALL power.
+    # Force every dead node in the entire graph back to live.
+    # This handles: deviceless poles, 30% telemetry drop, DT nodes, and imputed topology gaps.
+    force_restored = 0
+    for node_id in engine.graph.nodes:
+        if not engine.graph.nodes[node_id].get('is_live', True):
+            engine.graph.nodes[node_id]['is_live'] = True
+            engine.graph.nodes[node_id]['reported_state'] = True
+            force_restored += 1
+    
+    return {
+        "status": "success",
+        "telemetry_sent": len(telemetry_raw),
+        "force_restored": force_restored,
+        "faults": engine.localize_faults(MOCK_SCHEDULED_OUTAGES)
+    }
+
+@app.post("/api/faults/resolve")
+def resolve_ticket(req: Dict = Body(...)):
+    """ Attempt to close a ticket manually. Pushes back if power is still out. """
+    target_id = req.get("target_id")
+    if not target_id:
+        raise HTTPException(status_code=400, detail="Missing target_id")
+        
+    if target_id in engine.graph.nodes:
+        # If it's a span, check the child node (target_id). If it's a DT, check the DT node.
+        is_live = engine.graph.nodes[target_id].get("is_live", True)
+        if not is_live:
+            raise HTTPException(status_code=400, detail="Cannot close ticket: Telemetry confirms power is still OUT at this location.")
+            
+    return {"status": "success", "message": "Ticket successfully closed."}
+
 @app.post("/api/grid/reset")
 def reset_grid():
     """ Reset all nodes in graph engine to healthy Live state """
@@ -225,7 +264,7 @@ def reset_grid():
     return {"status": "success", "message": "Grid state reset to Live."}
 
 @app.post("/api/briefing")
-def get_briefing(fault: Dict):
+def get_briefing(fault: Dict = Body(...)):
     """ Generate structured AI Crew Dispatch Briefing """
     return generate_crew_briefing(fault, engine.graph)
 
