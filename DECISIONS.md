@@ -2,6 +2,17 @@
 
 This document records the meaningful architectural and product decisions made while building this system, sorted newest first. 
 
+### Decision: "Silent Failure" Detection via Heartbeat Sweeper & Time Fast-Forwarding
+**Date:** 2026-07-31
+**Context:** When a span fault physically cuts power to leaf nodes, there is a chance that 0 telemetry messages reach the backend (due to Firmware 1.2 quiet failures or the 30% capacitor failure rate upon power loss). A pure event-driven ingestion system would remain blind to these faults forever. However, the system specs state that all devices emit a heartbeat every 15 mins (+/- 45s). 
+**What I Chose:** 
+1. **Simulator Tracking:** The `Simulator` class tracks `physically_dead_nodes` independent of the `telemetry_sent` events.
+2. **Fast-Forward API:** Added a `POST /api/simulate/fast_forward` endpoint to simulate the passage of 16+ minutes.
+3. **Heartbeat Sweeper Logic:** When time is fast-forwarded, the backend checks for missing heartbeats. Any node that is physically dead but hasn't updated the graph state gets forcefully marked as `is_live = False`, triggering the `localize_faults` engine retroactively.
+4. **UI Integration:** Added a "Fast-Forward 15 Mins" simulation button.
+**Why I Chose It:** This accurately models the physical reality of IoT grids. Without receiving at least one event message, the algorithm correctly does not infer a fault immediately. Fast-forwarding time proves the robustness of the system: no silent failure remains hidden once the next heartbeat polling cycle is missed.
+
+
 ### Decision: Hierarchical Fault Aggregation & Child Ticket Suppression
 **Date:** 2026-07-31
 **Context:** When a Distribution Transformer blows or a Substation Feeder trips, all downstream poles (~70 to ~500 poles) lose power simultaneously. Generating 70 individual `span_fault` tickets would overwhelm field dispatch.

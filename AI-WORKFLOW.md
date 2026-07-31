@@ -83,5 +83,24 @@ In the final architectural review session, I conducted a deep audit of the syste
 2. **Synthetic World Scale Defense (2,889 Poles Rationale):**
    - *Rigor Check:* Confirmed that uniform grids (75 poles/DT) introduce artificial rigidity. Generating `random.randint(40, 100)` poles across 40 DTs yields 2,889 poles, accurately modeling physical line variations across commercial and residential feeders.
 
-3. **HTTP Streaming Ingestion Boundary:**
    - *Rigor Check:* Audited the HTTP POST bridge (`simulator.py` ➔ `/telemetry` POST ➔ `main.py` sequence check ➔ `GraphEngine` node state update), confirming clean decoupling between physics simulation and engine ingestion.
+
+---
+
+## 6. Edge Case Realization (The Heartbeat Sweeper)
+**Date:** 2026-07-31
+
+**What I Discovered:**
+While testing the simulation, I clicked "Snap Wire" and the UI reported "0 dying gasp messages received," but no fault ticket was generated. I initially questioned the AI on why no ticket appeared. The AI correctly explained that this was a physically accurate "Silent Failure" caused by 100% packet loss/device death, and that an event-driven system would remain completely blind.
+
+However, I immediately cross-referenced this against the assignment prompt constraints and caught a missing piece of logic: **"but there was something which will heartbeat every 15 min +-45 second, so we would know if its alive or not"**. 
+
+**How I Directed the Fix:**
+I challenged the AI on this constraint. The AI conceded that our system was only simulating the exact millisecond of the blackout and lacked a temporal background sweeper to catch the missing heartbeats 15 minutes later. 
+
+I ordered the AI to implement this missing physics logic. The AI proposed and implemented:
+1. A state tracker (`physically_dead_nodes`) inside the Simulator to represent the physical ground truth.
+2. A `POST /api/simulate/fast_forward` backend endpoint to act as the temporal sweeper.
+3. A **"Fast-Forward 15 Mins"** button on the UI.
+
+Now, if a silent failure occurs, clicking "Fast-Forward" triggers the backend sweeper to forcefully kill any nodes that missed their check-in, instantly generating the delayed fault ticket. This interaction proved that AI can build realistic simulators, but as the principal engineer, I must enforce the strict temporal constraints of the physical world.
