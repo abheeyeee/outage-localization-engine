@@ -109,6 +109,24 @@ export default function App() {
     }
   };
 
+  // Fast Forward Time
+  const handleFastForward = async () => {
+    setIsSimulating(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/simulate/fast_forward`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setSimInfo(data);
+        await fetchTopology();
+        await fetchFaults();
+      }
+    } catch (err) {
+      console.error('Fast forward error:', err);
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
   // Generate AI Crew Briefing
   const handleSelectFault = async (fault) => {
     try {
@@ -148,6 +166,7 @@ export default function App() {
           <SimulationPanel 
             onSimulate={handleSimulate} 
             onReset={handleReset} 
+            onFastForward={handleFastForward}
             isSimulating={isSimulating} 
             simInfo={simInfo}
           />
