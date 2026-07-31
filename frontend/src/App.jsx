@@ -63,11 +63,19 @@ export default function App() {
   const handleSimulate = async (type) => {
     setIsSimulating(true);
     try {
-      const res = await fetch(`${API_BASE}/api/simulate/fault`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fault_type: type })
-      });
+      const endpoint = type === 'scheduled' 
+        ? `${API_BASE}/api/simulate/scheduled_outage`
+        : `${API_BASE}/api/simulate/fault`;
+
+      const options = type === 'scheduled'
+        ? { method: 'POST' }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fault_type: type })
+          };
+
+      const res = await fetch(endpoint, options);
       if (res.ok) {
         await fetchTopology();
         await fetchFaults();

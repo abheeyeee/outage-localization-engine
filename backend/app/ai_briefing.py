@@ -17,20 +17,38 @@ def generate_crew_briefing(fault: Dict, engine_graph=None) -> Dict:
     dt_id = fault.get('dt_id')
     feeder_id = fault.get('feeder_id')
     
-    location_str = "Unknown Coordinates"
+    pincode = fault.get('pincode', '560001')
+    pincode_area = fault.get('pincode_area', 'Bangalore Urban')
+    location_str = f"PIN: {pincode} ({pincode_area})"
     lat, lon = None, None
     
     if engine_graph and parent_id and parent_id in engine_graph.nodes:
         lat = engine_graph.nodes[parent_id].get('lat')
         lon = engine_graph.nodes[parent_id].get('lon')
-        location_str = f"Lat: {lat}, Lon: {lon}"
+        location_str = f"PIN: {pincode} ({pincode_area}) | Lat: {lat}, Lon: {lon}"
     elif engine_graph and dt_id and dt_id in engine_graph.nodes:
         lat = engine_graph.nodes[dt_id].get('lat')
         lon = engine_graph.nodes[dt_id].get('lon')
-        location_str = f"Lat: {lat}, Lon: {lon}"
+        location_str = f"PIN: {pincode} ({pincode_area}) | Lat: {lat}, Lon: {lon}"
+
+    is_scheduled = fault.get('is_scheduled', False)
+    reason = fault.get('reason', 'Planned Maintenance / Load Shedding')
+    target_node = parent_id or dt_id or feeder_id or 'Target Node'
 
     # Build Structured Technical Briefing
-    if fault_type == 'span_fault':
+    if is_scheduled:
+        title = f"SCHEDULED MAINTENANCE BRIEF: {reason} on {target_node}"
+        severity = "PLANNED MAINTENANCE"
+        topology_note = f"📅 SCHEDULED OUTAGE FEED MATCH: Power shutdown is part of pre-announced maintenance/load shedding ({reason}). Routine overruns of 20-40 min apply."
+        action_plan = [
+            f"1. Verify planned maintenance window with Central Grid Control Room for {target_node}.",
+            f"2. Inspect location {location_str} for planned maintenance activities ({reason}).",
+            "3. Confirm Lockout/Tagout (LOTO) safety protocol before line work.",
+            "4. Monitor automated telemetry restoration upon maintenance completion."
+        ]
+        safety_warning = "NOTICE: Planned Maintenance Shutdown. Standard Lockout/Tagout (LOTO) safety protocols apply."
+
+    elif fault_type == 'span_fault':
         title = f"DISPATCH BRIEF: Span Fault between {parent_id} and {child_id}"
         severity = "HIGH"
         topology_note = (

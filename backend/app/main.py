@@ -175,6 +175,20 @@ def simulate_fault(req: SimulateFaultRequest):
         "faults": engine.localize_faults(MOCK_SCHEDULED_OUTAGES)
     }
 
+@app.post("/api/simulate/scheduled_outage")
+def simulate_scheduled_outage():
+    """ Inject a blackout matching an active scheduled outage feed """
+    # Trigger outage on Transformer D-0005 (in MOCK_SCHEDULED_OUTAGES)
+    telemetry_raw = sim.inject_dt_fault("D-0005")
+    events = [TelemetryEvent(**msg) for msg in telemetry_raw]
+    res = ingest_telemetry(events)
+    return {
+        "status": "success",
+        "telemetry_sent": len(telemetry_raw),
+        "telemetry_processed": res.message,
+        "faults": engine.localize_faults(MOCK_SCHEDULED_OUTAGES)
+    }
+
 @app.post("/api/grid/reset")
 def reset_grid():
     """ Reset all nodes in graph engine to healthy Live state """

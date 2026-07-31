@@ -73,7 +73,14 @@ export default function IncidentFeed({ faults, onSelectFault }) {
 
                 {/* Details */}
                 <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f1f5f9' }}>
-                  {isSpan ? (
+                  {fault.is_scheduled ? (
+                    <div>
+                      <span style={{ color: '#c084fc' }}>{fault.reason || 'Scheduled Maintenance'}</span>
+                      <div style={{ fontSize: '0.8rem', color: '#cbd5e1', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
+                        Target: {fault.dt_id || fault.feeder_id || fault.parent_id}
+                      </div>
+                    </div>
+                  ) : isSpan ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-mono)' }}>
                       <span>{fault.parent_id}</span>
                       <ArrowRight size={14} color="#ef4444" />
@@ -84,6 +91,13 @@ export default function IncidentFeed({ faults, onSelectFault }) {
                   ) : (
                     <span>Feeder Trip: {fault.feeder_id} ({fault.affected_dts} DTs)</span>
                   )}
+                </div>
+
+                {/* PIN Code & Area Location */}
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: '#38bdf8', fontWeight: 600 }}>PIN: {fault.pincode || '560001'}</span>
+                  <span>•</span>
+                  <span>{fault.pincode_area || 'Bangalore Urban'}</span>
                 </div>
 
                 {/* AI Briefing Button */}

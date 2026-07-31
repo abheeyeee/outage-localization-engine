@@ -3,6 +3,7 @@ import os
 import networkx as nx
 import math
 from typing import Dict, List, Tuple
+from backend.app.geocoder import resolve_pincode
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance between two points on the earth."""
@@ -167,12 +168,17 @@ class GraphEngine:
             dark_dts = [dt for dt in dts if not self.graph.nodes[dt].get('is_live', True)]
             if len(dts) > 0 and (len(dark_dts) / len(dts)) >= 0.5:
                 is_sched = f_id in scheduled_map
+                first_dt = dts[0] if dts else None
+                dt_node = self.graph.nodes.get(first_dt, {}) if first_dt else {}
+                geo_info = resolve_pincode(dt_node.get('lat'), dt_node.get('lon'), dt_node.get('pincode'))
                 faults.append({
                     "fault_type": "feeder_fault",
                     "feeder_id": f_id,
                     "affected_dts": len(dts),
                     "is_scheduled": is_sched,
-                    "reason": scheduled_map.get(f_id) if is_sched else None
+                    "reason": scheduled_map.get(f_id) if is_sched else None,
+                    "pincode": geo_info["pincode"],
+                    "pincode_area": geo_info["area"]
                 })
                 failed_feeders.add(f_id)
                 
@@ -182,12 +188,15 @@ class GraphEngine:
             if data['type'] == 'dt' and data['feeder_id'] not in failed_feeders:
                 if not data.get('is_live', True):
                     is_sched = node in scheduled_map
+                    geo_info = resolve_pincode(data.get('lat'), data.get('lon'), data.get('pincode'))
                     faults.append({
                         "fault_type": "dt_fault",
                         "dt_id": node,
                         "is_imputed": node in self.imputed_dts,
                         "is_scheduled": is_sched,
-                        "reason": scheduled_map.get(node) if is_sched else None
+                        "reason": scheduled_map.get(node) if is_sched else None,
+                        "pincode": geo_info["pincode"],
+                        "pincode_area": geo_info["area"]
                     })
                     failed_dts.add(node)
                     
@@ -208,13 +217,16 @@ class GraphEngine:
             
             if u_live and not v_live:
                 is_sched = u in scheduled_map or v in scheduled_map
+                geo_info = resolve_pincode(u_data.get('lat'), u_data.get('lon'), u_data.get('pincode'))
                 faults.append({
                     "fault_type": "span_fault",
                     "parent_id": u,
                     "child_id": v,
                     "is_imputed": data.get('is_imputed', False),
                     "is_scheduled": is_sched,
-                    "reason": scheduled_map.get(u) or scheduled_map.get(v) if is_sched else None
+                    "reason": scheduled_map.get(u) or scheduled_map.get(v) if is_sched else None,
+                    "pincode": geo_info["pincode"],
+                    "pincode_area": geo_info["area"]
                 })
                 
         return faults

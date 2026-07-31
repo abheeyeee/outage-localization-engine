@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, RefreshCw, AlertOctagon, Flame } from 'lucide-react';
+import { Zap, RefreshCw, AlertOctagon, Flame, Calendar } from 'lucide-react';
 
 export default function SimulationPanel({ onSimulate, onReset, isSimulating }) {
   return (
@@ -82,6 +82,28 @@ export default function SimulationPanel({ onSimulate, onReset, isSimulating }) {
       >
         <AlertOctagon size={14} />
         Trip Substation Feeder
+      </button>
+
+      {/* Trigger Scheduled Outage Button */}
+      <button
+        disabled={isSimulating}
+        onClick={() => onSimulate('scheduled')}
+        style={{
+          background: 'rgba(168, 85, 247, 0.2)',
+          border: '1px solid rgba(168, 85, 247, 0.4)',
+          color: '#c084fc',
+          borderRadius: '8px',
+          padding: '8px 14px',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          cursor: isSimulating ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}
+      >
+        <Calendar size={14} />
+        Trigger Scheduled Outage
       </button>
 
       {/* Reset Grid Button */}
