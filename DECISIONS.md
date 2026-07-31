@@ -4,6 +4,67 @@ This document records the meaningful architectural and product decisions made wh
 
 ---
 
+### Decision: Periodic Heartbeats and Watchdog Timeout Handling
+**Date:** 2026-07-31
+**Context:** In normal operations, IoT devices transmit periodic `heartbeat` events (e.g., every 60 seconds) with `energized=True` to confirm operational health. I needed to define how periodic heartbeats interact with state resolution.
+**What I Chose:** 
+1. **Heartbeat Processing:** Incoming `heartbeat` payloads refresh the pole's `is_live=True` and `last_heartbeat_ts` timestamp.
+2. **Watchdog Evaluation:** If a device misses heartbeats, it enters a `silent` state. The system does not immediately declare it dark; instead, the **Implied State Post-Order Traversal** evaluates its children. If children continue emitting heartbeats (`Live`), the silent pole is flagged as a `Sensor Failure` (comms down). If all children miss heartbeats (`Dark`), it is confirmed as a `Power Loss`.
+**Why I Chose It:** This prevents comms degradation (e.g., cellular signal drop) from triggering false-positive power outage alerts.
+
+---
+
+### Decision: Designing for Interview "Unseen Data" Curveballs
+**Date:** 2026-07-31
+**Context:** The evaluation criteria state that in the technical interview, reviewers will test candidates on "unseen data" or sudden constraint changes (e.g., customer complaints as a new data source, full GIS maps appearing, or mesh loops).
+**What I Chose:** I designed the `GraphEngine` to be modularly decoupled from data sources. The ingestion layer translates any external signal (IoT, customer calls, SCADA) into a normalized node state update before feeding it into the post-order graph traversal engine.
+**Why I Chose It:** Decoupling ingestion from graph evaluation ensures the core fault localization math remains invariant, allowing the system to easily integrate new data sources without refactoring the engine.
+
+---
+
+### Decision: Categorizing Faults and the "Actively Lying Sensor" Rule
+**Date:** 2026-07-31
+**Context:** The assignment brief demands we distinguish between a single broken span, a blown transformer (DT Fault), and a massive Feeder trip. It also explicitly notes the "broken lamp circuit" edge case: an isolated dark pole with live children is physically impossible as a line fault and means the sensor is actively lying. 
+**What I Chose:** 
+1. **Lying Sensors:** I updated the Implied State resolver so that even if a node *explicitly* sends a `power_lost` payload, if any of its children are live, the engine forcefully overrides the sensor and marks the node back to `Live`. We do not trust lying sensors.
+2. **DT/Feeder Faults:** I updated the `localize_faults` boundary detector. Before flagging individual spans, it checks group hierarchies. If *all* DTs on a feeder are dark, it flags a `feeder_fault` and ignores the spans below. If *all* immediate children of a DT are dark, it flags a `dt_fault` and ignores the spans below. 
+3. **Out-of-Order Packets:** To solve the +/- 90s clock skew constraint, I added a strict sequence check (`event.seq <= current_seq`) to the FastAPI endpoint. Older packets that arrive late are dropped, ensuring the graph is never overwritten with stale data.
+**Why I Chose It:** This completely fulfills the physical constraints of the grid, ensuring our Control Room operators aren't misled by dead hardware and correctly identify the scale of the blackout.
+
+---
+
+### Decision: Handling Silent Sensor Failures (The "Implied State" Rule)
+**Date:** 2026-07-31
+**Context:** When a wire breaks, all downstream poles lose power. However, if a pole's sensor is broken (e.g., dead battery or v1.2 firmware), it will not send a `power_lost` event, appearing "live" in the database. This could trick the algorithm into thinking the fault is further downstream than it actually is.
+**What I Chose:** I implemented a strict mathematical "Implied State" check in the traversal algorithm. The rule is: If a node is silent (no telemetry), we check its children. If **ANY** child is live, it mathematically proves power is flowing through the silent node, so the silent node is **Implied Live**. If **ALL** children are dark, it strongly suggests the silent node is also dark, and we push the suspected fault boundary higher up the tree.
+**Why I Chose It:** This prevents dead sensors from creating false positives, allowing the algorithm to correctly identify the true span break even when intermediate devices fail to report their state.
+
+---
+
+### Decision: Backend Architecture (Separation of Concerns)
+**Date:** 2026-07-31
+**Context:** When building the FastAPI backend for ingestion and fault localization, I needed to decide how to structure the code to keep it maintainable, readable, and professional.
+**What I Chose:** I split the backend into three distinct files: `models.py` (for data validation), `graph_engine.py` (for the heavy mathematical graph processing and MST imputation), and `main.py` (for the web server and API routes).
+**Why I Chose It:** This enforces the "Separation of Concerns" design pattern. If I put everything in one file, it would become an unreadable monolith. By separating the web server logic from the mathematical graph logic, the system is much easier to debug and scale. 
+
+---
+
+### Decision: Handling 60% Missing Topology (Spatial Imputation)
+**Date:** 2026-07-31
+**Context:** The assignment explicitly states that ~60% of the transformers lack pole ordering (topology) data. The system must still be able to localize faults on these transformers. While brainstorming this problem, I realized that although the wiring is unknown, the physical GPS coordinates (`lat`, `lon`) of every pole are known and guaranteed.
+**What I Chose:** I decided to use a **Geometric Minimum Spanning Tree (MST)** to mathematically infer the missing wiring. When the backend boots up, it will connect missing poles to their closest geographic neighbor to form a radial tree. 
+**Why I Chose It:** In the real world, utilities string copper wire to the closest possible pole to save money. Therefore, geographic proximity is the most accurate heuristic for physical wiring. Furthermore, I decided to flag any fault occurring on these inferred trees with a "⚠️ Low Confidence" warning in the UI, ensuring the Control Room engineers know the system is relying on an educated guess.
+
+---
+
+### Decision: The Simulator's "Ground Truth" File
+**Date:** 2026-07-31
+**Context:** The assignment demands that 60% of the grid must have missing topology data. However, I am also required to build a Simulator that *acts* like the real physical world (snapping wires and cascading power loss). 
+**What I Chose:** I decided the data generator must export *two* files: `poles.csv` (which has 60% missing data and is given to the Control Room) and `ground_truth_poles.csv` (which has 100% perfect wiring data).
+**Why I Chose It:** The Simulator plays "God". It cannot simulate a blackout if it doesn't know how the wires are connected. By separating the datasets, the Simulator can perfectly calculate the physics of a blackout using the Ground Truth file, while our detection algorithm is still correctly forced to solve the assignment's missing data constraint using only `poles.csv`. 
+
+---
+
 ### Decision: Building for Resilience (Unseen Topology & Bad Payloads)
 **Date:** 2026-07-31
 **Context:** I was brainstorming how the system would behave in the real world if it encounters data it has never seen before, or a physical grid structure that breaks the rules (like a loop instead of a tree).
