@@ -4,39 +4,39 @@
 
 ```mermaid
 flowchart TD
-    subgraph EdgeDevices ["Edge Devices (Simulated)"]
+    subgraph EdgeDevices [Edge Devices Simulated]
         P1(Pole Sensor A)
         P2(Pole Sensor B)
         P3(DT Sensor)
     end
     
-    subgraph Ingestion
+    subgraph Ingestion [Ingestion Layer]
         API[FastAPI Gateway]
         Validation[Pydantic Validation]
     end
     
-    subgraph Engine
+    subgraph Engine [Core Engine]
         Memory[NetworkX In-Memory DAG]
         Alg[Localization Algorithm]
     end
     
-    subgraph Frontend
+    subgraph Frontend [React Frontend]
         React[React Dashboard]
-        Map[Leaflet/Mapbox GUI]
+        Map[Leaflet GUI]
     end
     
-    P1 -- HTTP POST JSON --> API
-    P2 -- HTTP POST JSON --> API
-    P3 -- HTTP POST JSON --> API
+    P1 -->|HTTP POST JSON| API
+    P2 -->|HTTP POST JSON| API
+    P3 -->|HTTP POST JSON| API
     
     API --> Validation
-    Validation -- Valid Telemetry --> Memory
-    Memory -- Triggers --> Alg
+    Validation -->|Valid Telemetry| Memory
+    Memory -->|Triggers| Alg
     
-    Alg -- "Calculates Fault Boundaries" --> Memory
+    Alg -->|Calculates Fault Boundaries| Memory
     
-    React -- "GET /api/faults (Polling)" --> API
-    API -- Return Active Faults --> React
+    React -->|GET /api/faults Polling| API
+    API -->|Return Active Faults| React
     React --> Map
 ```
 
