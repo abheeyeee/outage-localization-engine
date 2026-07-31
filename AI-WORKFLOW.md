@@ -68,3 +68,20 @@ Because I laid out the precise constraints from the brief, the AI generated a fi
 - It added the `last_seq` check to the FastAPI endpoint to drop stale, delayed packets.
 
 By acting as the Senior Architect and constantly cross-referencing the AI's output against the product requirements document, I ensured the final localization engine is 100% compliant with every edge case in the brief.
+
+---
+
+## 5. Deep Conceptual Review & Schema Auditing
+**Date:** 2026-07-31
+
+**What I Conducted:**
+In the final architectural review session, I conducted a deep audit of the system's design and data flow to prepare for technical interview defense:
+
+1. **Zero-Cheating Verification (`poles.csv` vs `ground_truth_poles.csv`):**
+   - *Rigor Check:* Verified that `ground_truth_poles.csv` acts strictly as physical reality for `simulator.py`, while `poles.csv` enforces the 60% missing topology constraint on `GraphEngine`. This guarantees zero algorithmic leakage.
+
+2. **Synthetic World Scale Defense (2,889 Poles Rationale):**
+   - *Rigor Check:* Confirmed that uniform grids (75 poles/DT) introduce artificial rigidity. Generating `random.randint(40, 100)` poles across 40 DTs yields 2,889 poles, accurately modeling physical line variations across commercial and residential feeders.
+
+3. **HTTP Streaming Ingestion Boundary:**
+   - *Rigor Check:* Audited the HTTP POST bridge (`simulator.py` ➔ `/telemetry` POST ➔ `main.py` sequence check ➔ `GraphEngine` node state update), confirming clean decoupling between physics simulation and engine ingestion.

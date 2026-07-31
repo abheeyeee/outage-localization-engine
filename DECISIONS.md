@@ -4,6 +4,32 @@ This document records the meaningful architectural and product decisions made wh
 
 ---
 
+### Decision: Dual-CSV Ground Truth vs Incomplete Registry Strategy
+**Date:** 2026-07-31
+**Context:** The assignment mandates that 60% of distribution transformers lack recorded wiring topology, while the simulator must physically calculate which poles lose power when a wire snaps.
+**What I Chose:** I implemented a dual-export strategy in `data_generator.py`:
+1. `poles.csv`: The incomplete utility registry given to `GraphEngine` (with `parent_pole_id` blank for 60% of DTs).
+2. `ground_truth_poles.csv`: The 100% complete physical topology map used strictly by `simulator.py`.
+**Why I Chose It:** This ensures strict zero-cheating data separation. The simulator models physical reality, while `GraphEngine` is forced to use Geometric MST Spatial Imputation to infer the missing 60% topology.
+
+---
+
+### Decision: Non-Uniform Grid Generation (2,889 Poles Rationale)
+**Date:** 2026-07-31
+**Context:** I needed to decide whether to generate a fixed 3,000 poles (75 poles per DT) or use a non-uniform random distribution.
+**What I Chose:** I used a random uniform distribution `POLES_PER_DT_RANGE = (40, 100)` per DT, resulting in 2,889 poles across 40 DTs.
+**Why I Chose It:** In real urban power distribution, transformers feed varying line lengths based on local consumer density. Non-uniform pole distribution represents authentic domain reality rather than an artificial, rigid grid.
+
+---
+
+### Decision: Omission of Standalone `feeders.csv` Table
+**Date:** 2026-07-31
+**Context:** Reviewing `02-data-and-systems.md` §3 schema contracts revealed that `feeder_id` is defined as an attribute inside `dts.csv` and `poles.csv`.
+**What I Chose:** I omitted creating a standalone `feeders.csv` file and embedded `feeder_id` directly as node metadata inside `GraphEngine`.
+**Why I Chose It:** Adhering strictly to the assignment's asset database schema contract avoids redundant CSV files while retaining full support for feeder-level outage classification.
+
+---
+
 ### Decision: Periodic Heartbeats and Watchdog Timeout Handling
 **Date:** 2026-07-31
 **Context:** In normal operations, IoT devices transmit periodic `heartbeat` events (e.g., every 60 seconds) with `energized=True` to confirm operational health. I needed to define how periodic heartbeats interact with state resolution.
