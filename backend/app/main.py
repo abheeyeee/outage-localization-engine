@@ -1,58 +1,168 @@
-from fastapi import FastAPI, BackgroundTasks
-from typing import List
+from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Dict, Optional
 import os
+import random
 
 try:
     from app.models import TelemetryEvent, FaultResponse
     from app.graph_engine import GraphEngine
+    from app.ai_briefing import generate_crew_briefing
+    from scripts.simulator import Simulator
 except ModuleNotFoundError:
     from backend.app.models import TelemetryEvent, FaultResponse
     from backend.app.graph_engine import GraphEngine
+    from backend.app.ai_briefing import generate_crew_briefing
+    from backend.scripts.simulator import Simulator
 
-app = FastAPI(title="KSPDB Fault Localization API")
+app = FastAPI(title="KSPDB Fault Localization & Control Room API")
+
+# Enable CORS for React Dashboard
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize the graph engine (loads data and runs spatial imputation on boot)
-data_dir = os.path.join(os.path.dirname(__file__), '../../backend/data')
+data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../backend/data'))
 engine = GraphEngine(data_dir)
+sim = Simulator(data_dir)
+
+class SimulateFaultRequest(BaseModel):
+    fault_type: str = "span"  # "span", "dt", or "feeder"
+    parent_id: Optional[str] = None
+    child_id: Optional[str] = None
+    dt_id: Optional[str] = None
+    feeder_id: Optional[str] = None
+    drop_rate: float = 0.30
 
 @app.get("/health")
 def health_check():
     return {
         "status": "healthy", 
         "poles_loaded": len(engine.poles),
+        "dts_loaded": len(engine.dts),
         "dts_imputed": len(engine.imputed_dts)
     }
 
+@app.get("/api/grid/topology")
+def get_grid_topology():
+    """
+    Returns full grid topology (nodes and edges) formatted for Map rendering.
+    """
+    nodes = []
+    for n, data in engine.graph.nodes(data=True):
+        nodes.append({
+            "id": n,
+            "type": data.get("type", "pole"),
+            "lat": data.get("lat"),
+            "lon": data.get("lon"),
+            "feeder_id": data.get("feeder_id"),
+            "dt_id": data.get("dt_id"),
+            "is_live": data.get("is_live", True),
+            "reported_state": data.get("reported_state"),
+            "device_id": data.get("device_id", "")
+        })
+
+    edges = []
+    for u, v, data in engine.graph.edges(data=True):
+        edges.append({
+            "source": u,
+            "target": v,
+            "is_imputed": data.get("is_imputed", False)
+        })
+
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "stats": {
+            "total_poles": len(engine.poles),
+            "total_dts": len(engine.dts),
+            "imputed_dts_count": len(engine.imputed_dts)
+        }
+    }
+
+@app.get("/api/faults")
+def get_localized_faults():
+    """ Returns active localized fault tickets """
+    return engine.localize_faults()
+
 @app.post("/telemetry", response_model=FaultResponse)
 def ingest_telemetry(events: List[TelemetryEvent]):
-    """
-    Ingest a batch of telemetry events.
-    In a production system, this would push to Kafka/Redis.
-    For this simulation, we update the in-memory graph immediately.
-    """
+    """ Ingest telemetry batch into graph engine """
     processed = 0
     for event in events:
         pole_id = event.pole_id
         if pole_id in engine.graph.nodes:
-            # Check Sequence (solve +/- 90s clock skew / out of order bug)
             current_seq = engine.graph.nodes[pole_id].get('last_seq', -1)
             if event.seq <= current_seq:
-                continue # Ignore delayed, older packets
+                continue # Drop stale out-of-order packets
                 
-            # Update the physical state in the graph and explicitly mark it as reported
             engine.graph.nodes[pole_id]['is_live'] = event.energized
             engine.graph.nodes[pole_id]['reported_state'] = event.energized
             engine.graph.nodes[pole_id]['last_seq'] = event.seq
             processed += 1
             
-    # Trigger fault localization
     faults = engine.localize_faults()
-    
     return FaultResponse(
         status="success",
         message=f"Processed {processed} telemetry events.",
         faults_detected=len(faults)
     )
+
+@app.post("/api/simulate/fault")
+def simulate_fault(req: SimulateFaultRequest):
+    """ Inject a fault via Simulator and process output telemetry """
+    sim.drop_rate = req.drop_rate
+    
+    if req.fault_type == "span":
+        parent = req.parent_id
+        child = req.child_id
+        
+        # Pick random span if not provided
+        if not parent or not child:
+            candidates = [p for p in sim.children_map.keys() if p.startswith("P-")]
+            parent = random.choice(candidates)
+            child = sim.children_map[parent][0]
+            
+        telemetry_raw = sim.inject_span_fault(parent, child)
+        
+    elif req.fault_type == "dt":
+        dt_id = req.dt_id or random.choice(list(engine.dts.keys()))
+        telemetry_raw = sim.inject_dt_fault(dt_id)
+        
+    else:  # feeder
+        feeder_id = req.feeder_id or "F-07-01"
+        telemetry_raw = sim.inject_feeder_fault(feeder_id)
+
+    # Ingest generated noisy telemetry
+    events = [TelemetryEvent(**msg) for msg in telemetry_raw]
+    res = ingest_telemetry(events)
+    
+    return {
+        "status": "success",
+        "telemetry_sent": len(telemetry_raw),
+        "telemetry_processed": res.message,
+        "faults": engine.localize_faults()
+    }
+
+@app.post("/api/grid/reset")
+def reset_grid():
+    """ Reset all nodes in graph engine to healthy Live state """
+    for n in engine.graph.nodes:
+        engine.graph.nodes[n]['is_live'] = True
+        engine.graph.nodes[n]['reported_state'] = None
+        engine.graph.nodes[n]['last_seq'] = -1
+    return {"status": "success", "message": "Grid state reset to Live."}
+
+@app.post("/api/briefing")
+def get_briefing(fault: Dict):
+    """ Generate structured AI Crew Dispatch Briefing """
+    return generate_crew_briefing(fault, engine.graph)
 
 if __name__ == "__main__":
     import uvicorn
