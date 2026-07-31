@@ -105,27 +105,28 @@ class GraphEngine:
 
     def resolve_implied_states(self):
         """
-        Evaluate silent nodes from the bottom up (post-order traversal).
-        If ANY child is Live -> Node is Live.
-        If ALL children are Dark -> Node is Dark.
+        Two-Pass Implied State Resolver:
+        1. Bottom-Up Pass (Leaves to Root): Overrides Lying Sensors if any downstream child is Live.
+        2. Top-Down Pass (Root to Leaves): Propagates physical blackout to silent downstream children.
         """
-        # Get nodes in reverse topological order (leaves to root)
+        # Pass 1: Bottom-Up (Lying Sensor Override)
         for node in reversed(list(nx.topological_sort(self.graph))):
             children = list(self.graph.successors(node))
             if children:
-                # Check children states
-                any_child_live = any(self.graph.nodes[c].get('is_live', True) for c in children)
-                all_children_dark = all(not self.graph.nodes[c].get('is_live', True) for c in children)
-                
-                # Rule 1: The Lying Sensor Override. 
-                # If ANY child is live, power MUST be flowing through this node.
-                # Even if it explicitly reported it was Dark, we override it to Live.
-                if any_child_live:
+                any_child_live = any(
+                    self.graph.nodes[c].get('is_live', True) and self.graph.nodes[c].get('reported_state') is not False 
+                    for c in children
+                )
+                # Lying Sensor Override: If parent reported Dark but any child is Live -> Parent is Live
+                if any_child_live and self.graph.nodes[node].get('reported_state') is False:
                     self.graph.nodes[node]['is_live'] = True
-                    
-                # Rule 2: The Silent Sensor Implied Dark
-                # If it hasn't reported a state, and all children are dark, it's implied dark.
-                elif self.graph.nodes[node].get('reported_state') is None and all_children_dark:
+
+        # Pass 2: Top-Down (Physical Blackout Propagation)
+        for node in list(nx.topological_sort(self.graph)):
+            parents = list(self.graph.predecessors(node))
+            if parents:
+                # If any parent is Dark, power cannot reach this child -> Child is Dark
+                if any(not self.graph.nodes[p].get('is_live', True) for p in parents):
                     self.graph.nodes[node]['is_live'] = False
 
     def localize_faults(self) -> List[Dict]:

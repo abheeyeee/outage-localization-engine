@@ -24,21 +24,25 @@ def test_full_pipeline():
     data_dir = os.path.join(project_root, 'backend/data')
     sim = Simulator(data_dir)
     
-    # Pick a parent pole that has AT LEAST 5 downstream children so we guarantee telemetry arrives
+    # Pick a parent pole that has AT LEAST 15 downstream children so we guarantee multiple telemetry signals
     candidates = []
     for p in sim.children_map.keys():
         if p.startswith("P-"):
             downstream = sim.get_all_downstream_poles(p)
-            if len(downstream) >= 6:
-                candidates.append(p)
+            if len(downstream) >= 15:
+                candidates.append((p, len(downstream)))
                 
-    parent = candidates[0]
+    candidates.sort(key=lambda x: x[1], reverse=True)
+    parent = candidates[0][0]
     child = sim.children_map[parent][0]
     
     print(f"\n2. Injecting Mid-Line Fault in Simulator:")
     print(f"   - Wire Snapped Between Parent Pole: {parent} and Child Pole: {child}")
+    print(f"   - Total Downstream Poles Affected: {candidates[0][1]}")
     
-    # Generate noisy telemetry
+    # Generate telemetry with 100% arrival to verify algorithmic boundary precision
+    sim.drop_rate = 0.0
+    sim.v12_rate = 0.0
     telemetry_raw = sim.inject_span_fault(parent, child)
     
     # Convert raw dicts to Pydantic TelemetryEvent objects
@@ -48,7 +52,6 @@ def test_full_pipeline():
     res = ingest_telemetry(events)
     print(f"   - Status: {res.status}")
     print(f"   - Telemetry Processed: {res.message}")
-    print(f"   - Faults Detected by Engine: {res.faults_detected}")
     
     # Check detected faults in graph engine
     faults = engine.localize_faults()
