@@ -4,7 +4,7 @@
 
 ```mermaid
 flowchart TD
-    subgraph Edge Devices (Simulated)
+    subgraph EdgeDevices ["Edge Devices (Simulated)"]
         P1(Pole Sensor A)
         P2(Pole Sensor B)
         P3(DT Sensor)
