@@ -5,7 +5,7 @@ import IncidentFeed from './components/IncidentFeed';
 import SimulationPanel from './components/SimulationPanel';
 import BriefingModal from './components/BriefingModal';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 export default function App() {
   const [nodes, setNodes] = useState([]);

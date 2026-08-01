@@ -130,3 +130,15 @@ This document records the meaningful architectural and product decisions made wh
 **What I Chose:** I decided to generate a synthetic grid of approximately 3,000 poles across a few dozen Distribution Transformers.
 **What I Rejected:** Generating the full 38,400 poles. 
 **Why I Chose It:** The FAQ explicitly states that a few thousand poles is plenty. More importantly, rendering 38,000 DOM elements on a web map at once will cause significant browser lag. 3,000 poles is the sweet spot: it is large enough to mathematically prove the graph algorithms work at scale, but small enough to ensure the operator console UI remains lightning fast during the demo.
+
+---
+
+## Concluding Thoughts: What I Would Do With Two More Weeks
+
+If given two more weeks to prepare this for production, my immediate priorities would be:
+1. **Persistent State Management**: Currently, the GraphEngine and incident states are held entirely in memory. I would migrate this to a distributed cache (like Redis) and a persistent store (PostgreSQL + PostGIS). If the Uvicorn worker restarts right now, we lose all active faults and imputed topologies.
+2. **Kafka Event Sourcing**: The `/telemetry` endpoint currently handles synchronous DB-like processing. I would decouple this by placing Kafka between the IoT endpoints and the backend, ensuring we can survive telemetry spikes (ticket storms) when massive feeder faults occur.
+3. **Advanced Imputation Algorithms**: Our geographic minimum spanning tree works for the 60% missing data constraint, but it incorrectly assumes power lines follow "as the crow flies" paths. I would integrate OpenStreetMap data to route imputed edges along physical road infrastructure.
+
+**What is currently fragile:**
+The `resolve_implied_states()` bottom-up pass is currently our weakest link. While it successfully handles "quiet failures" (firmware bugs) by inferring parent failure when children fail, it struggles with false positives if an entire neighborhood of poles happens to legitimately lose network connectivity but not physical power. We need out-of-band network connectivity metrics to distinguish between a power outage and a cellular tower outage.
