@@ -104,3 +104,30 @@ I ordered the AI to implement this missing physics logic. The AI proposed and im
 3. A **"Fast-Forward 15 Mins"** button on the UI.
 
 Now, if a silent failure occurs, clicking "Fast-Forward" triggers the backend sweeper to forcefully kill any nodes that missed their check-in, instantly generating the delayed fault ticket. This interaction proved that AI can build realistic simulators, but as the principal engineer, I must enforce the strict temporal constraints of the physical world.
+
+
+---
+
+## 7. Fixing Algorithmic Over-Aggregation (The Upstream Shift Bug)
+**Date:** 2026-08-01
+
+**What I Discovered:**
+While finalizing the `pytest` suite for the `GraphEngine`, I noticed a subtle but critical bug: when simulating a break on a purely linear string of poles, the algorithm would incorrectly localize the fault one node too far upstream. For example, if the line broke between P-002 and P-003, the ticket would report P-001 -> P-002.
+
+**How I Diagnosed & Directed the Fix:**
+I analyzed the AI-generated "Quiet Failure" resolver pass, which was designed to mark a silent parent pole as "dead" if its child reported dark. I realized that on a purely linear branch (a parent with only 1 child), this rule cascaded upward improperly, blaming the parent instead of pinpointing the actual downstream failure point.
+I directed a highly targeted fix: the implied-state resolver is now constrained to only aggressively collapse topology for actual transformers (DTs) or at branch points where *multiple* distinct lines report failures simultaneously. This fixed the mathematical mapping and successfully passed the test suite.
+
+---
+
+## 8. Finalizing the Restoration Verification Flow
+**Date:** 2026-08-01
+
+**What I Discovered:**
+The assignment strictly required that "restoration must be verified from telemetry... if a lineman marks it fixed and the poles are still dark, the system should not believe him." The AI had initially missed this closed-loop requirement.
+
+**How I Directed the Fix:**
+I prompted the AI to build a complete restoration workflow:
+1. `simulator.py` was updated to send forced `boot/power_restored` telemetry.
+2. A `POST /api/faults/resolve` endpoint was created to mathematically verify graph node states (`is_live=True`) before permitting ticket closure.
+3. I caught an edge-case bug where feeder faults could not be resolved because `F-xxx` feeder IDs aren't standard graph nodes; I guided the AI to dynamically check all underlying DTs on the feeder during the resolution check.
