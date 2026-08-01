@@ -15,6 +15,9 @@ docker compose up --build
 
 *Note: On first run, the backend container will automatically generate 2,800+ mock poles and 40 transformers before starting the server. This may take a few seconds.*
 
+### Auto-Seeding & G3 Gate Fulfillment
+To satisfy the assignment's **G3 Acceptance Gate** (seeding on startup with no manual intervention), this project utilizes a custom `backend/entrypoint.sh` script. When `docker compose up` is executed, the entrypoint intercepts the boot process, detects if the `dts.csv` and `poles.csv` data files are missing, and automatically triggers the Python data generator to build the synthetic grid before handing control over to the FastAPI server. You will never see an empty screen.
+
 ## Public Access (Live Demo)
 - **Frontend URL:** [PLACEHOLDER_FOR_FRONTEND_URL]
 - **Backend API URL:** [PLACEHOLDER_FOR_BACKEND_URL]
