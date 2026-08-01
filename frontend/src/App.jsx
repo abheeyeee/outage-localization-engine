@@ -15,6 +15,7 @@ export default function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [selectedBriefing, setSelectedBriefing] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
 
   // Fetch full topology (nodes and edges)
   const fetchTopology = useCallback(async () => {
@@ -155,9 +156,11 @@ export default function App() {
       });
       if (!res.ok) {
         const errData = await res.json();
-        alert(`System Rejected: ${errData.detail}`);
+        setToastMessage({ type: 'error', text: `System Rejected: ${errData.detail}` });
+        setTimeout(() => setToastMessage(null), 5000);
       } else {
-        alert("Ticket resolved successfully!");
+        setToastMessage({ type: 'success', text: "Ticket resolved successfully!" });
+        setTimeout(() => setToastMessage(null), 3000);
         fetchFaults();
       }
     } catch (err) {
@@ -225,6 +228,28 @@ export default function App() {
           briefing={selectedBriefing} 
           onClose={() => setSelectedBriefing(null)} 
         />
+      )}
+
+      {/* Custom Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: toastMessage.type === 'error' ? '#ef4444' : '#22c55e',
+          color: '#ffffff',
+          padding: '12px 24px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 9999,
+          fontWeight: 'bold',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          {toastMessage.type === 'error' ? '⚠️' : '✅'} {toastMessage.text}
+        </div>
       )}
     </div>
   );

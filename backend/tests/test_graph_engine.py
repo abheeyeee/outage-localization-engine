@@ -192,6 +192,4 @@ class TestScheduledOutageSuppression:
         faults = engine.localize_faults(scheduled)
 
         dt_faults = [f for f in faults if f["fault_type"] == "dt_fault"]
-        assert len(dt_faults) == 1
-        assert dt_faults[0]["is_scheduled"] == True
-        assert dt_faults[0]["reason"] == "Load shedding"
+        assert len(dt_faults) == 0, "Scheduled outages should be completely suppressed, returning no fault tickets."

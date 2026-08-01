@@ -177,15 +177,16 @@ class GraphEngine:
                 first_dt = dts[0] if dts else None
                 dt_node = self.graph.nodes.get(first_dt, {}) if first_dt else {}
                 geo_info = resolve_pincode(dt_node.get('lat'), dt_node.get('lon'), dt_node.get('pincode'))
-                faults.append({
-                    "fault_type": "feeder_fault",
-                    "feeder_id": f_id,
-                    "affected_dts": len(dts),
-                    "is_scheduled": is_sched,
-                    "reason": scheduled_map.get(f_id) if is_sched else None,
-                    "pincode": geo_info["pincode"],
-                    "pincode_area": geo_info["area"]
-                })
+                if not is_sched:
+                    faults.append({
+                        "fault_type": "feeder_fault",
+                        "feeder_id": f_id,
+                        "affected_dts": len(dts),
+                        "is_scheduled": is_sched,
+                        "reason": scheduled_map.get(f_id) if is_sched else None,
+                        "pincode": geo_info["pincode"],
+                        "pincode_area": geo_info["area"]
+                    })
                 failed_feeders.add(f_id)
                 
         # 2. Check for DT Faults
@@ -195,15 +196,16 @@ class GraphEngine:
                 if not data.get('is_live', True):
                     is_sched = node in scheduled_map
                     geo_info = resolve_pincode(data.get('lat'), data.get('lon'), data.get('pincode'))
-                    faults.append({
-                        "fault_type": "dt_fault",
-                        "dt_id": node,
-                        "is_imputed": node in self.imputed_dts,
-                        "is_scheduled": is_sched,
-                        "reason": scheduled_map.get(node) if is_sched else None,
-                        "pincode": geo_info["pincode"],
-                        "pincode_area": geo_info["area"]
-                    })
+                    if not is_sched:
+                        faults.append({
+                            "fault_type": "dt_fault",
+                            "dt_id": node,
+                            "is_imputed": node in self.imputed_dts,
+                            "is_scheduled": is_sched,
+                            "reason": scheduled_map.get(node) if is_sched else None,
+                            "pincode": geo_info["pincode"],
+                            "pincode_area": geo_info["area"]
+                        })
                     failed_dts.add(node)
                     
         # 3. Check for Span Faults
