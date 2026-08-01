@@ -172,6 +172,20 @@ def simulate_fault(req: SimulateFaultRequest):
     events = [TelemetryEvent(**msg) for msg in telemetry_raw]
     res = ingest_telemetry(events)
     
+    # For DT/Feeder faults: the equipment itself knows it failed.
+    # Directly mark affected DT nodes dark so the algorithm correctly
+    # classifies the outage (instead of scattered span_faults due to 30% telemetry drop).
+    if req.fault_type == "dt":
+        dt_id = req.dt_id or dt_id
+        if dt_id in engine.graph.nodes:
+            engine.graph.nodes[dt_id]['is_live'] = False
+            engine.graph.nodes[dt_id]['reported_state'] = False
+    elif req.fault_type == "feeder":
+        for node, data in engine.graph.nodes(data=True):
+            if data.get('type') == 'dt' and data.get('feeder_id') == feeder_id:
+                engine.graph.nodes[node]['is_live'] = False
+                engine.graph.nodes[node]['reported_state'] = False
+
     return {
         "status": "success",
         "telemetry_sent": len(telemetry_raw),
@@ -186,6 +200,12 @@ def simulate_scheduled_outage():
     telemetry_raw = sim.inject_dt_fault("D-0005")
     events = [TelemetryEvent(**msg) for msg in telemetry_raw]
     res = ingest_telemetry(events)
+    
+    # Directly mark the DT node dark (equipment-level knowledge, not sensor telemetry)
+    if "D-0005" in engine.graph.nodes:
+        engine.graph.nodes["D-0005"]["is_live"] = False
+        engine.graph.nodes["D-0005"]["reported_state"] = False
+    
     return {
         "status": "success",
         "telemetry_sent": len(telemetry_raw),
@@ -244,12 +264,26 @@ def resolve_ticket(req: Dict = Body(...)):
     target_id = req.get("target_id")
     if not target_id:
         raise HTTPException(status_code=400, detail="Missing target_id")
-        
-    if target_id in engine.graph.nodes:
-        # If it's a span, check the child node (target_id). If it's a DT, check the DT node.
+    
+    # Check if target is a feeder ID (not a graph node — check DTs under it)
+    if target_id.startswith("F-"):
+        dark_dts = []
+        for node, data in engine.graph.nodes(data=True):
+            if data.get('type') == 'dt' and data.get('feeder_id') == target_id:
+                if not data.get('is_live', True):
+                    dark_dts.append(node)
+        if dark_dts:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot close ticket: {len(dark_dts)} transformers on feeder {target_id} still have no power."
+            )
+    elif target_id in engine.graph.nodes:
         is_live = engine.graph.nodes[target_id].get("is_live", True)
         if not is_live:
-            raise HTTPException(status_code=400, detail="Cannot close ticket: Telemetry confirms power is still OUT at this location.")
+            raise HTTPException(
+                status_code=400, 
+                detail="Cannot close ticket: Telemetry confirms power is still OUT at this location."
+            )
             
     return {"status": "success", "message": "Ticket successfully closed."}
 
