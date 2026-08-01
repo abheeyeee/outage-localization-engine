@@ -131,7 +131,9 @@ class GraphEngine:
                 )
                 
                 if all_reporting_dark and not any_child_confirmed_live:
-                    self.graph.nodes[node]['is_live'] = False
+                    # Only infer a silent parent is dead if it's a DT, or if it has multiple branches that all went dark
+                    if self.graph.nodes[node].get('type') == 'dt' or len(children) > 1:
+                        self.graph.nodes[node]['is_live'] = False
                 elif any_child_confirmed_live and self.graph.nodes[node].get('reported_state') is False:
                     self.graph.nodes[node]['is_live'] = True
 
