@@ -147,7 +147,7 @@ This document records the meaningful architectural and product decisions made wh
 **Context:** The system pushes back with a 400 Bad Request if an operator tries to close a ticket while telemetry shows power is still out.
 **What I Chose:** A custom React state-driven HTML overlay banner for the warning.
 **What I Rejected:** Using `window.alert()`.
-**Why I Chose It:** During final end-to-end testing, we discovered that modern browsers (Chrome/Firefox) secretly suppress native `alert()` popups if they suspect dialog spam. This silently swallowed our critical validation warnings, making it look like the button was broken. Moving to an HTML overlay ensures the validation gate is always visible.
+**Why I Chose It:** During final end-to-end testing, I discovered that modern browsers (Chrome/Firefox) secretly suppress native `alert()` popups if they suspect dialog spam. This silently swallowed my critical validation warnings, making it look like the button was broken. Moving to an HTML overlay ensures the validation gate is always visible.
 
 ---
 
@@ -156,7 +156,7 @@ This document records the meaningful architectural and product decisions made wh
 If given two more weeks to prepare this for production, my immediate priorities would be:
 1. **Persistent State Management**: Currently, the GraphEngine and incident states are held entirely in memory. I would migrate this to a distributed cache (like Redis) and a persistent store (PostgreSQL + PostGIS). If the Uvicorn worker restarts right now, we lose all active faults and imputed topologies.
 2. **Kafka Event Sourcing**: The `/telemetry` endpoint currently handles synchronous DB-like processing. I would decouple this by placing Kafka between the IoT endpoints and the backend, ensuring we can survive telemetry spikes (ticket storms) when massive feeder faults occur.
-3. **Advanced Imputation Algorithms**: Our geographic minimum spanning tree works for the 60% missing data constraint, but it incorrectly assumes power lines follow "as the crow flies" paths. I would integrate OpenStreetMap data to route imputed edges along physical road infrastructure.
+3. **Advanced Imputation Algorithms**: My geographic minimum spanning tree works for the 60% missing data constraint, but it incorrectly assumes power lines follow "as the crow flies" paths. I would integrate OpenStreetMap data to route imputed edges along physical road infrastructure.
 
 **What is currently fragile:**
-The `resolve_implied_states()` bottom-up pass is currently our weakest link. While it successfully handles "quiet failures" (firmware bugs) by inferring parent failure when children fail, it struggles with false positives if an entire neighborhood of poles happens to legitimately lose network connectivity but not physical power. We need out-of-band network connectivity metrics to distinguish between a power outage and a cellular tower outage.
+The `resolve_implied_states()` bottom-up pass is currently my weakest link. While it successfully handles "quiet failures" (firmware bugs) by inferring parent failure when children fail, it struggles with false positives if an entire neighborhood of poles happens to legitimately lose network connectivity but not physical power. I need out-of-band network connectivity metrics to distinguish between a power outage and a cellular tower outage.

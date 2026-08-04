@@ -31,5 +31,5 @@ For grading and review, please refer to the following documents in this reposito
 
 1. **[ARCHITECTURE.md](./ARCHITECTURE.md)**: Details the Topological Graph Engine, spatial imputation algorithm, the two-pass Implied State resolver for quiet failures, and the backend data model.
 2. **[AI-WORKFLOW.md](./AI-WORKFLOW.md)**: Concrete examples of how LLMs failed, hallucinated, and were corrected during the engineering of this system.
-3. **[DECISIONS.md](./DECISIONS.md)**: A log of key technical tradeoffs made, including our strategy for preventing ticket storms and what we know is currently fragile.
+3. **[DECISIONS.md](./DECISIONS.md)**: A log of key technical tradeoffs made, including my strategy for preventing ticket storms and what I know is currently fragile.
 4. **[DEPLOYMENT.md](./DEPLOYMENT.md)**: Troubleshooting guide for Docker, CORS, and port conflicts.
