@@ -19,6 +19,7 @@ def generate_crew_briefing(fault: Dict, engine_graph=None) -> Dict:
     
     pincode = fault.get('pincode', '560001')
     pincode_area = fault.get('pincode_area', 'Bangalore Urban')
+    affected_poles = fault.get('affected_poles', 'unknown number of')
     location_str = f"PIN: {pincode} ({pincode_area})"
     lat, lon = None, None
     
@@ -52,9 +53,10 @@ def generate_crew_briefing(fault: Dict, engine_graph=None) -> Dict:
         title = f"DISPATCH BRIEF: Span Fault between {parent_id} and {child_id}"
         severity = "HIGH"
         topology_note = (
-            "⚠️ TOPOLOGY NOTICE: Wire connection was imputed using Geometric Minimum Spanning Tree (MST). "
-            "Utility GIS lacked physical wiring records for this section. Inspect adjacent spans within 30m radius."
-            if is_imputed else "VERIFIED TOPOLOGY: Physical wiring confirmed in utility GIS database."
+            f"⚠️ TOPOLOGY NOTICE: Wire connection was imputed using Geometric Minimum Spanning Tree (MST). "
+            f"Utility GIS lacked physical wiring records for this section. Inspect adjacent spans within 30m radius.\n"
+            f"Impact: Downstream power loss affecting {affected_poles} poles."
+            if is_imputed else f"VERIFIED TOPOLOGY: Physical wiring confirmed in utility GIS database.\nImpact: Downstream power loss affecting {affected_poles} poles."
         )
         action_plan = [
             f"1. Proceed to primary pole location {parent_id} ({location_str}).",
@@ -67,7 +69,7 @@ def generate_crew_briefing(fault: Dict, engine_graph=None) -> Dict:
     elif fault_type == 'dt_fault':
         title = f"DISPATCH BRIEF: Distribution Transformer Outage at {dt_id}"
         severity = "CRITICAL"
-        topology_note = f"Transformer failure affecting all downstream poles on transformer {dt_id}."
+        topology_note = f"Transformer failure affecting all {affected_poles} downstream poles on transformer {dt_id}."
         action_plan = [
             f"1. Dispatch substation crew directly to Transformer station {dt_id} ({location_str}).",
             "2. Inspect primary fuse unit and check for oil leakage or thermal flashover.",
@@ -78,7 +80,7 @@ def generate_crew_briefing(fault: Dict, engine_graph=None) -> Dict:
     else:  # feeder_fault
         title = f"DISPATCH BRIEF: Feeder Trip on Feeder {feeder_id}"
         severity = "EMERGENCY"
-        topology_note = f"Global feeder trip detected affecting {fault.get('affected_dts', 'multiple')} distribution transformers."
+        topology_note = f"Global feeder trip detected affecting {fault.get('affected_dts', 'multiple')} distribution transformers and {affected_poles} total poles."
         action_plan = [
             f"1. Dispatch Substation Operations Crew to Feeder {feeder_id} breaker panel.",
             "2. Conduct automated line impedance check to locate main trunk line fault.",
