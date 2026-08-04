@@ -27,7 +27,11 @@ export default function SimulationPanel({ onSimulate, onReset, onFastForward, on
         }}>
           <Zap size={14} color="var(--accent-primary)" />
           <span>
-            {simInfo.telemetry_sent > 0 ? (
+            {simInfo.message ? (
+              <>
+                <strong>{simInfo.message.includes('repaired') ? 'Power Restored:' : 'Simulation Event:'}</strong> {simInfo.message} {simInfo.telemetry_sent ? `(${simInfo.telemetry_sent} startup ping(s) received)` : ''}
+              </>
+            ) : simInfo.telemetry_sent > 0 ? (
               <>
                 <strong>Telemetry Ingested:</strong> {simInfo.telemetry_sent} dying gasp message(s) received. (30% packet drop + Firmware 1.2 quiet failure applied)
               </>
