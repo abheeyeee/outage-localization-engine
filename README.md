@@ -1,6 +1,6 @@
-# Grid Fault Localization Engine
+# Outage Localization Engine
 
-This repository contains the Grid Fault Localization System. The system ingests noisy, lossy "dying gasp" telemetry from grid IoT devices, spatially imputes missing topology data, and uses a Topological Graph Engine to precisely localize span and equipment faults while aggressively preventing ticket storms via Hierarchical Aggregation.
+This repository contains the Outage Localization Engine. The system ingests noisy, lossy "dying gasp" telemetry from grid IoT devices, spatially imputes missing topology data, and uses a Topological Graph Engine to precisely localize span and equipment faults while aggressively preventing ticket storms via Hierarchical Aggregation.
 
 ## Quickstart
 
