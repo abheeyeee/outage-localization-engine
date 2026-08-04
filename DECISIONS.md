@@ -4,6 +4,27 @@ This document records the meaningful architectural and product decisions made wh
 
 ---
 
+## ⚠️ Known Rough Edges & Current Limitations
+
+Per the assignment prompt ("Say what is broken"), I want to be completely transparent about the specific edge cases and structural limitations that this system currently fails on, and why I chose to accept them as trade-offs rather than over-engineering a brittle solution.
+
+### 1. The Isolated Leaf-Node False Alarm (A "Don't Cry Wolf" Exception)
+**The Flaw:** If a sensor at the absolute edge of the imputed grid (a "Leaf Node" with zero downstream children) breaks and sends a false `power_lost` ping, the system **will** generate a false single-pole span fault ticket. It fails to suppress it.
+**Why it exists:** The Implied State checker relies on checking a node's children to verify if the parent is lying. A leaf node has no children to check. During testing, I attempted to unconditionally suppress all leaf node failure pings until the 15-minute heartbeat could verify them. This created a catastrophic bug: when a *real* blackout occurred, the leaf nodes were suppressed and scrubbed from memory, which caused their parents to think they had no corroborating children, causing the parents to suppress themselves, creating a chain-reaction that completely blinded the algorithm to massive grid failures. 
+**The Accepted Trade-off:** Rolling a single truck to check a potentially broken sensor at the very edge of a grid is standard utility procedure. It is a mathematically necessary and acceptable risk to prevent the algorithmic destruction of real, massive cascading blackout tickets.
+
+### 2. Geographic MST Miswiring
+**The Flaw:** 60% of the grid topology is missing. My `GraphEngine` imputes this by connecting disconnected nodes to their closest geographic neighbor (Minimum Spanning Tree). 
+**Why it exists:** In reality, geographical barriers (like rivers, highways, or private property) might force utility wires to take much longer paths rather than a straight line to the closest neighbor. 
+**The Accepted Trade-off:** If a fault occurs on a branch that was physically routed around a highway, the algorithm will confidently (and incorrectly) identify the geographically closest pole as the parent span. Without GIS barrier data, Euclidean distance is the only viable heuristic.
+
+### 3. Simulator Race Conditions
+**The Flaw:** Spamming the simulation buttons (e.g., clicking "Snap Wire" 5 times in one second) can cause the FastAPI backend to generate race conditions between the simulated sequence IDs and the time-series ingestion queue.
+**Why it exists:** The simulator runs in the same async event loop as the GraphEngine telemetry ingestion for the sake of Docker simplicity.
+**The Accepted Trade-off:** The core GraphEngine algorithm is highly robust, but the mock Simulator UI is fragile under stress testing. In a real production environment, the ingestion queue would be managed by Kafka or RabbitMQ, completely separating the physical telemetry generation from the engine's processing loop.
+
+---
+
 ### Decision (Where AI Belongs): Rejecting Real LLMs (OpenAI / Llama) for Deterministic Generation
 **Date:** 2026-08-04
 **Context:** The assignment grading rubric explicitly asks: *"Where AI belongs in the product... If you conclude that no part of this product should use an LLM, that is a legitimate answer — argue it and we will read the argument on its merits."* I picked the "Crew Dispatch Briefing" as an AI-shaped feature. I heavily considered integrating a true generative LLM to write these briefings by calling an external API (like OpenAI) or embedding a local model (like Llama 3 via Ollama) into the Docker stack.
