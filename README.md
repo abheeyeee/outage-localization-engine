@@ -19,8 +19,8 @@ docker compose up --build
 To satisfy the assignment's **G3 Acceptance Gate** (seeding on startup with no manual intervention), this project utilizes a custom `backend/entrypoint.sh` script. When `docker compose up` is executed, the entrypoint intercepts the boot process, detects if the `dts.csv` and `poles.csv` data files are missing, and automatically triggers the Python data generator to build the synthetic grid before handing control over to the FastAPI server. You will never see an empty screen.
 
 ## Public Access (Live Demo)
-- **Frontend URL:** [PLACEHOLDER_FOR_FRONTEND_URL]
-- **Backend API URL:** [PLACEHOLDER_FOR_BACKEND_URL]
+- **Frontend URL:** [https://outagelocalizationengine.vercel.app/](https://outagelocalizationengine.vercel.app/)
+- **Backend API URL:** [https://outage-localization-engine.onrender.com/docs](https://outage-localization-engine.onrender.com/docs)
 - **Demo Video (5-min):** [PLACEHOLDER_FOR_LOOM_OR_YOUTUBE_LINK]
 
 *(Note to Reviewer: The live demo is hosted on a free tier. Please allow 30-60 seconds for the containers to cold-start when you first open the URL before assuming the system is broken.)*
