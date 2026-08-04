@@ -38,7 +38,7 @@ For grading and review, please refer to the following documents in this reposito
 
 ## 🧪 Testing Guide for Graders (Simulation Panel)
 
-To strictly evaluate this submission against the rubric, a fully integrated **Grid Simulator** is provided on the left panel of the UI. This simulator generates real-time telemetry events injected with realistic 30% packet drops and firmware failure rates.
+To strictly evaluate this submission against the rubric, a fully integrated **Grid Simulator** is provided on the bottom panel of the UI. This simulator generates real-time telemetry events injected with realistic 30% packet drops and firmware failure rates.
 
 ### 1. Test Task 2 (Localizing Span Faults)
 - **Action:** Click **"Snap Wire (Span Fault)"**.
