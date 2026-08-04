@@ -131,3 +131,22 @@ I prompted the AI to build a complete restoration workflow:
 1. `simulator.py` was updated to send forced `boot/power_restored` telemetry.
 2. A `POST /api/faults/resolve` endpoint was created to mathematically verify graph node states (`is_live=True`) before permitting ticket closure.
 3. I caught an edge-case bug where feeder faults could not be resolved because `F-xxx` feeder IDs aren't standard graph nodes; I guided the AI to dynamically check all underlying DTs on the feeder during the resolution check.
+
+---
+
+## 9. Final Review & Rigorous UX Auditing
+**Date:** 2026-08-04
+
+During the final system validation, I aggressively audited the AI's output and caught three critical logic and UX hallucinations that I forced it to fix:
+
+**1. The Missing Output Constraints (Algorithmic Failure):**
+- *The Issue:* The assignment explicitly demanded the localization engine output the coordinates and the exact number of downstream poles affected. I noticed the AI had built a beautiful frontend that intelligently calculated this on the fly, but the backend `localize_faults()` function failed to explicitly inject `lat`, `lon`, and `affected_poles` into the API JSON payload.
+- *The Fix:* I rejected the AI's code and forced it to implement `networkx.descendants()` in the backend. This ensured the GraphEngine mathematically calculated the exact downstream blast radius natively, fulfilling the strict API contract.
+
+**2. The Temporal "Silent Failure" Challenge:**
+- *The Issue:* During a simulated span break, the UI printed: *"Silent Disconnect: 0 dying gasp messages received."* but successfully found the fault and reported *"Impact: 33 poles"*. I rigorously interrogated the AI, challenging its logic: *"If 0 telemetry messages were received, how can 33 poles be affected?"*
+- *The Fix:* I forced the AI to defend its logic. It successfully proved that "0 messages" was a cellular packet drop (telemetry failure), but the 15-minute heartbeat sweeper successfully identified the 33 nodes that stopped communicating (physical failure). Validating this logic proved the temporal fault engine was mathematically sound.
+
+**3. The UX Hardcoding Hallucination:**
+- *The Issue:* I clicked "Restore Power" in the simulator. The system successfully fixed the grid, but the UI bizarrely printed: *"Telemetry Ingested: 33 dying gasp message(s) received."*
+- *The Fix:* I caught the AI lazily hardcoding the React component (`SimulationPanel.jsx`). It had written a conditional that blindly printed "dying gasp" anytime *any* telemetry array arrived, completely ignoring whether the packet was an `energized=True` boot-up ping or an `energized=False` failure ping. I threw out its lazy UI code and forced it to correctly parse the `simInfo.message` from the backend to accurately reflect grid restoration.
