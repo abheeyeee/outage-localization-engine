@@ -50,10 +50,20 @@ To strictly evaluate this submission against the rubric, a fully integrated **Gr
 - **What happens:** An entire transformer goes dark, wiping out hundreds of downstream poles.
 - **Verification:** The localization engine will *not* flood the control room with hundreds of span fault tickets. It correctly groups the failure to the single root cause (the DT) using Top-Down graph traversal.
 
-### 3. Test Task 3 (Don't Cry Wolf - Mathematical Validation)
+### 3. Test Task 2 (Massive Scale Feeder Faults)
+- **Action:** Click **"Blow Substation (Feeder Fault)"**.
+- **What happens:** An entire 11kV Feeder trips, knocking out multiple transformers and up to 500+ poles simultaneously.
+- **Verification:** The engine's Top-Down hierarchy aggressively aggregates this. It will suppress both the individual pole span faults AND the individual DT faults, outputting exactly one root-cause **Feeder Fault** ticket.
+
+### 4. Test Task 3 (Don't Cry Wolf - Mathematical Validation)
 - **Action:** Click **"Trigger Scheduled Outage"**.
 - **What happens:** The simulator drops power to a block of poles due to scheduled load shedding.
 - **Verification:** The engine will process the power loss but **generate zero tickets**. The backend strictly suppresses expected failures to prevent "crying wolf". Furthermore, the engine utilizes a *Bottom-Up Implied State Check*: if any sensor lies or sends an isolated failure ping while its children are alive, the algorithm mathematically proves the parent is lying and suppresses the false alarm.
+
+### 5. Test Task 3 (Silent Failures & Heartbeat Sweeping)
+- **Action:** Click **"Fast Forward 15 Mins"**.
+- **What happens:** The UI simulates the passage of 15 minutes. 
+- **Verification:** Because ~30% of sensors fail to send a "dying gasp" when power is cut (Quiet Failures), the algorithm might initially be blind to a fault. Fast-forwarding triggers the backend's Watchdog Sweeper. It scans for missing 15-minute heartbeats, retroactively discovers the silent dead sensors, and generates the correct tickets.
 
 ### 4. Test Task 4 & 5 (Ticket Workflow & Operator UI)
 - **Action:** Click **"Repair Fault (Restore Power)"**.
