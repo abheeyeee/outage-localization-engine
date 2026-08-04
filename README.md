@@ -59,3 +59,23 @@ To strictly evaluate this submission against the rubric, a fully integrated **Gr
 - **Action:** Click **"Repair Fault (Restore Power)"**.
 - **What happens:** The simulator restores physical power. 100% of sensors instantly boot up and flood the network with `energized=True` pings.
 - **Verification:** The system seamlessly resolves the active fault tickets. The minimalist Operator Console is explicitly designed to reduce cognitive load at 2 a.m.—hiding complex SVG topologies in favor of direct, actionable AI Crew Briefings.
+
+---
+
+## 🛠️ Automated Tests (Localization Logic)
+
+Per the assignment instructions: *"Tests where they matter. We are looking for tests on the localization logic specifically — that is where correctness lives. Broad coverage of controllers and components is not what we want. If you test one thing, test that a known fault in a known topology produces the expected span."*
+
+I explicitly adhered to this. All tests target the mathematical core of `GraphEngine.localize_faults()`.
+
+To run the algorithmic test suite:
+```bash
+# Ensure your docker containers are running, then execute:
+docker compose exec backend pytest -v
+```
+
+### What these tests verify:
+1. **`test_mid_line_span_fault`**: Programmatically builds a known linear `NetworkX` topology (DT -> P1 -> P2 -> P3 -> P4), cuts power at P3, and asserts the engine outputs exactly 1 span fault between P2 and P3.
+2. **`test_fault_at_head_of_line`**: Tests Hierarchical Aggregation. Plunges an entire DT and 4 poles into darkness and asserts that 0 span faults are generated, outputting exactly 1 DT fault instead.
+3. **`test_lying_parent_with_live_child`**: Tests the Implied State Resolver. Forces a parent pole to report `False` while its child reports `True`, and asserts the engine overrides the lie and generates 0 tickets.
+4. **`test_scheduled_outage_tagged`**: Validates the "Don't Cry Wolf" scheduled outage suppression.
