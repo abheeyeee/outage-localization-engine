@@ -234,19 +234,20 @@ class GraphEngine:
             if u_live and not v_live:
                 is_sched = u in scheduled_map or v in scheduled_map
                 geo_info = resolve_pincode(u_data.get('lat'), u_data.get('lon'), u_data.get('pincode'))
-                faults.append({
-                    "fault_type": "span_fault",
-                    "parent_id": u,
-                    "child_id": v,
-                    "affected_poles": len(nx.descendants(self.graph, v)) + 1, # +1 for the broken child pole itself
-                    "is_imputed": data.get('is_imputed', False),
-                    "is_scheduled": is_sched,
-                    "reason": scheduled_map.get(u) or scheduled_map.get(v) if is_sched else None,
-                    "pincode": geo_info["pincode"],
-                    "pincode_area": geo_info["area"],
-                    "lat": u_data.get('lat'),
-                    "lon": u_data.get('lon')
-                })
+                if not is_sched:
+                    faults.append({
+                        "fault_type": "span_fault",
+                        "parent_id": u,
+                        "child_id": v,
+                        "affected_poles": len(nx.descendants(self.graph, v)) + 1, # +1 for the broken child pole itself
+                        "is_imputed": data.get('is_imputed', False),
+                        "is_scheduled": is_sched,
+                        "reason": scheduled_map.get(u) or scheduled_map.get(v) if is_sched else None,
+                        "pincode": geo_info["pincode"],
+                        "pincode_area": geo_info["area"],
+                        "lat": u_data.get('lat'),
+                        "lon": u_data.get('lon')
+                    })
                 
         return faults
 
