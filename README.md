@@ -21,6 +21,9 @@ To satisfy the assignment's **G3 Acceptance Gate** (seeding on startup with no m
 ## Public Access (Live Demo)
 - **Frontend URL:** [PLACEHOLDER_FOR_FRONTEND_URL]
 - **Backend API URL:** [PLACEHOLDER_FOR_BACKEND_URL]
+- **Demo Video (5-min):** [PLACEHOLDER_FOR_LOOM_OR_YOUTUBE_LINK]
+
+*(Note to Reviewer: The live demo is hosted on a free tier. Please allow 30-60 seconds for the containers to cold-start when you first open the URL before assuming the system is broken.)*
 
 ## Documentation Map
 
