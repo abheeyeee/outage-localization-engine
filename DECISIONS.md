@@ -164,8 +164,23 @@ By arguing against an LLM and choosing deterministic generation, I ensure 0 late
 
 ---
 
-## Concluding Thoughts: What I Would Do With Two More Weeks
+## Documented Assumptions (Getting Unstuck)
 
+The assignment brief is deliberately incomplete in places, requiring executive engineering decisions. Below are the formal assumptions I made when the brief was ambiguous:
+
+1. **Assumption: The Scale of the Synthetic Grid**
+   - *Ambiguity:* The brief states the division has 38,400 poles, but the FAQ suggests "a few thousand is plenty." It does not specify the mathematical ratio of poles per transformer.
+   - *My Decision:* I assumed that forcing the reviewer's browser to render 38,000 DOM SVG elements on Leaflet would cause fatal lag. I made the executive decision to cap the synthetic grid at ~2,889 poles distributed unevenly across 40 Distribution Transformers. This is large enough to mathematically prove the graph logic at scale, but small enough to guarantee a snappy, 60fps UI experience for the reviewer.
+2. **Assumption: The Missing `feeders.csv` Table**
+   - *Ambiguity:* The schema requirements in `02-data-and-systems.md` list `feeder_id` inside the `dts.csv` and `poles.csv` payloads, but never explicitly demand a standalone `feeders.csv` relational table.
+   - *My Decision:* I assumed this was a deliberate test of schema normalization. I omitted creating a standalone `feeders.csv` file and instead embedded the feeder hierarchy directly as node metadata inside the `GraphEngine`. This avoids redundant data loading while fully supporting feeder-level fault aggregation.
+3. **Assumption: The Simulation of Time (15-Minute Heartbeats)**
+   - *Ambiguity:* The brief notes that devices heartbeat every "15 min +-45 second", which is the only way to catch a quiet "firmware 1.2" failure. However, a reviewer grading the assignment cannot sit at their desk for 15 minutes waiting for a ticket to generate.
+   - *My Decision:* I assumed the backend must operate as a real-time event listener, but the *Simulator* required a temporal override. I built a `POST /api/simulate/fast_forward` endpoint attached to a UI button. I assumed this was the best way to prove the temporal heartbeat logic works without forcing the reviewer to wait in real-time.
+
+---
+
+## Concluding Thoughts: What I Would Do With Two More Weeks
 If given two more weeks to prepare this for production, my immediate priorities would be:
 1. **Persistent State Management**: Currently, the GraphEngine and incident states are held entirely in memory. I would migrate this to a distributed cache (like Redis) and a persistent store (PostgreSQL + PostGIS). If the Uvicorn worker restarts right now, we lose all active faults and imputed topologies.
 2. **Kafka Event Sourcing**: The `/telemetry` endpoint currently handles synchronous DB-like processing. I would decouple this by placing Kafka between the IoT endpoints and the backend, ensuring we can survive telemetry spikes (ticket storms) when massive feeder faults occur.
