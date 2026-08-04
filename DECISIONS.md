@@ -22,6 +22,13 @@ By arguing against an LLM and choosing deterministic generation, I ensure 0 late
 **What I Rejected:** Showing them in the UI with a special tag.
 **Why I Chose It:** The evaluation rubric explicitly states that "Firing on scheduled load shedding" actively costs points. In control room engineering, a ticket implies an actionable failure. Generating a ticket for expected behavior is a false alarm. Suppressing it guarantees compliance with the strict grading criteria.
 
+### Decision: The Operator Console UI (What I Chose to Leave Out)
+**Date:** 2026-08-04
+**Context:** Task 5 demands an Operator Console for a non-engineer sitting in a control room at 2:00 a.m. The prompt explicitly evaluates *"what you chose to show, what you chose to leave out, and why"*.
+**What I Chose:** I built a minimalist, dark-mode React UI centered on a Leaflet map with a clean "Incident Feed" sidebar. The incident feed translates complex graph math into simple, actionable AI Briefings.
+**What I Left Out:** I deliberately left out raw telemetry feeds, JSON logs, flashing metrics, and complex wiring node-link diagrams.
+**Why I Chose It:** In critical infrastructure monitoring, cognitive overload causes fatal errors. At 2:00 a.m., an operator does not want to see 15,000 JSON payloads of "power_lost" events, nor do they want to trace a messy web of 2,800 connected SVG circles. They only need to know: *What broke? Where is it? Who is affected? What do I tell the crew?* By hiding the raw telemetry and using the backend GraphEngine to distill 10,000 messy events into 1 clean "Feeder Fault" ticket, I ensure the operator is handed a solution, not a puzzle.
+
 ---
 
 ### Decision: Custom React Toasts over Native Alerts

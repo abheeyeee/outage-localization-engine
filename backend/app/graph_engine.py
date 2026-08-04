@@ -178,14 +178,19 @@ class GraphEngine:
                 dt_node = self.graph.nodes.get(first_dt, {}) if first_dt else {}
                 geo_info = resolve_pincode(dt_node.get('lat'), dt_node.get('lon'), dt_node.get('pincode'))
                 if not is_sched:
+                    # Calculate affected poles: all descendants of all DTs on this feeder
+                    affected_poles = sum(len(nx.descendants(self.graph, dt)) for dt in dts)
                     faults.append({
                         "fault_type": "feeder_fault",
                         "feeder_id": f_id,
                         "affected_dts": len(dts),
+                        "affected_poles": affected_poles,
                         "is_scheduled": is_sched,
                         "reason": scheduled_map.get(f_id) if is_sched else None,
                         "pincode": geo_info["pincode"],
-                        "pincode_area": geo_info["area"]
+                        "pincode_area": geo_info["area"],
+                        "lat": dt_node.get('lat'),
+                        "lon": dt_node.get('lon')
                     })
                 failed_feeders.add(f_id)
                 
@@ -200,11 +205,14 @@ class GraphEngine:
                         faults.append({
                             "fault_type": "dt_fault",
                             "dt_id": node,
+                            "affected_poles": len(nx.descendants(self.graph, node)),
                             "is_imputed": node in self.imputed_dts,
                             "is_scheduled": is_sched,
                             "reason": scheduled_map.get(node) if is_sched else None,
                             "pincode": geo_info["pincode"],
-                            "pincode_area": geo_info["area"]
+                            "pincode_area": geo_info["area"],
+                            "lat": data.get('lat'),
+                            "lon": data.get('lon')
                         })
                     failed_dts.add(node)
                     
@@ -230,11 +238,14 @@ class GraphEngine:
                     "fault_type": "span_fault",
                     "parent_id": u,
                     "child_id": v,
+                    "affected_poles": len(nx.descendants(self.graph, v)) + 1, # +1 for the broken child pole itself
                     "is_imputed": data.get('is_imputed', False),
                     "is_scheduled": is_sched,
                     "reason": scheduled_map.get(u) or scheduled_map.get(v) if is_sched else None,
                     "pincode": geo_info["pincode"],
-                    "pincode_area": geo_info["area"]
+                    "pincode_area": geo_info["area"],
+                    "lat": u_data.get('lat'),
+                    "lon": u_data.get('lon')
                 })
                 
         return faults
