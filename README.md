@@ -61,9 +61,10 @@ To strictly evaluate this submission against the rubric, a fully integrated **Gr
 - **Verification:** The engine will process the power loss but **generate zero tickets**. The backend strictly suppresses expected failures to prevent "crying wolf". Furthermore, the engine utilizes a *Bottom-Up Implied State Check*: if any sensor lies or sends an isolated failure ping while its children are alive, the algorithm mathematically proves the parent is lying and suppresses the false alarm.
 
 ### 5. Test Task 3 (Silent Failures & Heartbeat Sweeping)
+- **When to use:** Sometimes when you click "Snap Wire", the simulator will return a **"Silent Disconnect: 0 dying gasp messages received"** warning. This simulates the 30% failure rate where devices lose power without broadcasting an alert, leaving the engine temporarily blind.
 - **Action:** Click **"Fast Forward 15 Mins"**.
 - **What happens:** The UI simulates the passage of 15 minutes. 
-- **Verification:** Because ~30% of sensors fail to send a "dying gasp" when power is cut (Quiet Failures), the algorithm might initially be blind to a fault. Fast-forwarding triggers the backend's Watchdog Sweeper. It scans for missing 15-minute heartbeats, retroactively discovers the silent dead sensors, and generates the correct tickets.
+- **Verification:** Fast-forwarding triggers the backend's Watchdog Sweeper. It scans for missed 15-minute heartbeats, retroactively discovers the silent dead sensors, and generates the correct localized tickets despite receiving zero `power_lost` packets.
 
 ### 4. Test Task 4 & 5 (Ticket Workflow & Operator UI)
 - **Action:** Click **"Repair Fault (Restore Power)"**.
