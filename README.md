@@ -89,3 +89,22 @@ docker compose exec backend pytest -v
 2. **`test_fault_at_head_of_line`**: Tests Hierarchical Aggregation. Plunges an entire DT and 4 poles into darkness and asserts that 0 span faults are generated, outputting exactly 1 DT fault instead.
 3. **`test_lying_parent_with_live_child`**: Tests the Implied State Resolver. Forces a parent pole to report `False` while its child reports `True`, and asserts the engine overrides the lie and generates 0 tickets.
 4. **`test_scheduled_outage_tagged`**: Validates the "Don't Cry Wolf" scheduled outage suppression.
+
+---
+
+## 🚀 Performance Benchmarking (5,000 Burst)
+
+To mathematically prove the backend satisfies **Task 1** (sustained 39 msg/s and a 5,000 message burst), an integration load-testing script is included. 
+
+Because `O(1)` memory dictionary updates (`engine.graph.nodes[id]['is_live'] = False`) are exponentially faster than database I/O, the API handles the burst effortlessly.
+
+To run the load test:
+```bash
+# Ensure the docker containers are running, then execute:
+docker compose exec backend python scripts/benchmark.py
+```
+
+### What this benchmark verifies:
+1. **Operator Console Load:** Simulates fetching the entire grid topology for the frontend map and asserts it resolves in under 2 seconds.
+2. **Sustained Ingest Throughput:** Shoots 1,000 telemetry packets and asserts the API consumes them at a rate of > 500 msg/s.
+3. **Ingest Burst Tolerance:** Shoots an instantaneous burst of **5,000 dying gasps and heartbeats** at the API and asserts it is successfully ingested and validated in under 10 seconds.
